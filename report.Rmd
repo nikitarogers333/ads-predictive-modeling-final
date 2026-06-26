@@ -1,0 +1,287 @@
+---
+title: "Predictive Modeling Final Project"
+author: "Team 1"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+  pdf_document:
+    toc: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 7,
+  fig.height = 5
+)
+
+library(tidyverse)
+library(tidymodels)
+library(janitor)
+library(skimr)
+library(naniar)
+library(corrplot)
+library(vip)
+```
+
+# Problem Statement
+
+State the predictive modeling problem clearly.
+
+Example structure:
+
+> The objective of this project is to predict `[response variable]` using `[dataset/source]`. This prediction is useful because `[business or research justification]`. We frame this as a `[classification/regression]` problem because the outcome variable is `[binary/category/continuous]`.
+
+# Dataset Description
+
+Describe:
+
+- Dataset source
+- Unit of observation
+- Number of rows and columns
+- Response variable
+- Predictor variables
+- Data collection context
+- Limitations or bias concerns
+
+```{r load-data}
+# Replace with actual data import
+# raw_data <- read_csv("data/dataset.csv")
+
+# Example placeholder:
+# raw_data <- read_csv("data/your_dataset.csv") %>%
+#   clean_names()
+```
+
+# Exploratory Data Analysis
+
+## Data Structure
+
+```{r data-structure}
+# glimpse(raw_data)
+# skim(raw_data)
+```
+
+## Response Variable Distribution
+
+```{r response-distribution}
+# ggplot(raw_data, aes(x = response_variable)) +
+#   geom_bar() +
+#   labs(title = "Distribution of Response Variable")
+```
+
+## Predictor Relationships
+
+Include plots and tables only when discussed in text.
+
+```{r predictor-relationships}
+# Example:
+# ggplot(raw_data, aes(x = predictor, y = response_variable)) +
+#   geom_point(alpha = 0.4) +
+#   labs(title = "Predictor vs Response")
+```
+
+## Missing Values
+
+```{r missing-values}
+# naniar::miss_var_summary(raw_data)
+# vis_miss(raw_data)
+```
+
+# Data Wrangling And Pre-Processing
+
+Discuss:
+
+- Missing values
+- Outliers
+- Correlated features
+- Categorical encoding
+- Feature engineering
+- Scaling/normalization if needed
+
+```{r preprocessing}
+# model_data <- raw_data %>%
+#   mutate(
+#     # feature engineering here
+#   ) %>%
+#   drop_na(response_variable)
+```
+
+# Data Splitting
+
+Use train/validation/test or resampling.
+
+```{r data-split}
+# set.seed(123)
+# data_split <- initial_split(model_data, prop = 0.80, strata = response_variable)
+# train_data <- training(data_split)
+# test_data  <- testing(data_split)
+#
+# set.seed(123)
+# folds <- vfold_cv(train_data, v = 5, strata = response_variable)
+```
+
+# Modeling Strategy
+
+Explain why models were chosen.
+
+Suggested baseline:
+
+- Regularized regression or logistic regression
+- Random forest
+- Gradient boosted trees
+
+```{r recipe}
+# model_recipe <- recipe(response_variable ~ ., data = train_data) %>%
+#   step_impute_median(all_numeric_predictors()) %>%
+#   step_impute_mode(all_nominal_predictors()) %>%
+#   step_dummy(all_nominal_predictors()) %>%
+#   step_zv(all_predictors()) %>%
+#   step_normalize(all_numeric_predictors())
+```
+
+## Baseline Model
+
+```{r baseline-model}
+# baseline_spec <- logistic_reg() %>%
+#   set_engine("glm")
+#
+# baseline_workflow <- workflow() %>%
+#   add_model(baseline_spec) %>%
+#   add_recipe(model_recipe)
+#
+# baseline_fit <- fit(baseline_workflow, data = train_data)
+```
+
+## Tuned Model 1
+
+```{r tuned-model-1}
+# rf_spec <- rand_forest(
+#   mtry = tune(),
+#   trees = 500,
+#   min_n = tune()
+# ) %>%
+#   set_engine("ranger", importance = "impurity") %>%
+#   set_mode("classification")
+```
+
+## Tuned Model 2
+
+```{r tuned-model-2}
+# boost_spec <- boost_tree(
+#   trees = tune(),
+#   tree_depth = tune(),
+#   learn_rate = tune(),
+#   loss_reduction = tune(),
+#   sample_size = tune(),
+#   mtry = tune()
+# ) %>%
+#   set_engine("xgboost") %>%
+#   set_mode("classification")
+```
+
+# Validation And Hyperparameter Tuning
+
+```{r tuning}
+# metric_set <- metric_set(accuracy, roc_auc, sensitivity, specificity)
+#
+# rf_grid <- grid_regular(
+#   mtry(range = c(2, 10)),
+#   min_n(range = c(2, 20)),
+#   levels = 5
+# )
+#
+# rf_results <- tune_grid(
+#   workflow() %>% add_model(rf_spec) %>% add_recipe(model_recipe),
+#   resamples = folds,
+#   grid = rf_grid,
+#   metrics = metric_set
+# )
+```
+
+# Model Evaluation
+
+Report the most relevant performance metrics.
+
+Classification examples:
+
+- Accuracy
+- ROC AUC
+- Sensitivity
+- Specificity
+- Confusion matrix
+
+Regression examples:
+
+- RMSE
+- MAE
+- R-squared
+
+```{r model-comparison}
+# collect_metrics(rf_results)
+```
+
+# Final Model Selection
+
+Explain:
+
+- Which model performed best
+- Why it was selected
+- Tradeoffs between accuracy and interpretability
+- Important variables
+
+```{r final-model}
+# best_rf <- select_best(rf_results, metric = "roc_auc")
+# final_workflow <- finalize_workflow(
+#   workflow() %>% add_model(rf_spec) %>% add_recipe(model_recipe),
+#   best_rf
+# )
+#
+# final_fit <- last_fit(final_workflow, data_split, metrics = metric_set)
+# collect_metrics(final_fit)
+```
+
+# Results
+
+Present results in plain technical language.
+
+```{r final-results}
+# collect_predictions(final_fit) %>%
+#   conf_mat(truth = response_variable, estimate = .pred_class)
+```
+
+# Discussion And Conclusion
+
+Address:
+
+- How the problem was framed as predictive modeling
+- What the final model tells us
+- Practical implications
+- Model limitations
+- Suggestions beyond current analysis
+
+# AI-Assisted Tools Disclosure
+
+State any AI-assisted tool use here.
+
+Example:
+
+> AI-assisted tools were used to help structure the report outline and review code organization. The team reviewed, modified, and validated all generated suggestions. All final modeling decisions and interpretations were made by the team.
+
+# References
+
+Add APA 7 references for:
+
+- Dataset source
+- R packages, if required by instructor
+- Any external methods or articles
+
+# Appendix: Reproducible R Code
+
+This document includes code chunks throughout. If required, place a full clean script in this appendix or in `code/final_analysis.R`.
