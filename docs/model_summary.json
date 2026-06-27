@@ -11,17 +11,6 @@
   "final_specificity": 0.9097,
   "test_results": [
     {
-      "model": "Random forest",
-      "parameter": "mtry=4",
-      "threshold": 0.27,
-      "accuracy": 0.8941,
-      "sensitivity": 0.7955,
-      "specificity": 0.9097,
-      "precision": 0.5833,
-      "f1": 0.6731,
-      "auc": 0.9271
-    },
-    {
       "model": "Logistic regression",
       "parameter": "none",
       "threshold": 0.34,
@@ -42,6 +31,17 @@
       "precision": 0.3626,
       "f1": 0.4889,
       "auc": 0.8694
+    },
+    {
+      "model": "Random forest",
+      "parameter": "mtry=4",
+      "threshold": 0.27,
+      "accuracy": 0.8941,
+      "sensitivity": 0.7955,
+      "specificity": 0.9097,
+      "precision": 0.5833,
+      "f1": 0.6731,
+      "auc": 0.9271
     }
   ],
   "top_predictors": [

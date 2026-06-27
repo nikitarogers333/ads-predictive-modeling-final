@@ -1,6 +1,6 @@
 # Predicting High Quality Wine From Physicochemical Measurements
 
-Project Status: Final submission package in progress
+Project Status: Final submission package complete
 
 ## Project Objective
 
@@ -67,7 +67,7 @@ Predictors:
 - pROC
 - Git / GitHub
 - Python for slide, narration, and packaging automation
-- ElevenLabs for disclosed narration generation
+- Edge TTS for disclosed narration generation
 
 ## Repository Structure
 
@@ -111,9 +111,8 @@ The report downloads the dataset automatically if `data/winequality-red.csv` doe
 
 ## AI Use Disclosure
 
-AI-assisted tools were used to help organize the report structure, draft explanatory language, create reproducible code scaffolding, and prepare presentation materials. The modeling workflow, code execution, output review, and final interpretation were checked in this project repository. AI was used as a support tool and is disclosed in the report because the assignment requires explicit attribution. The final submission should be reviewed by the student before submission so that all methods, code, and conclusions can be explained independently.
+AI-assisted tools were used to help organize the report structure, draft explanatory language, create reproducible code scaffolding, and prepare presentation materials. AI was used as a support tool and is disclosed in the report because the assignment requires explicit attribution. The repository includes the R Markdown source, code appendix, generated outputs, and interpretation needed to inspect the analysis independently.
 
 ## License
 
 For academic use only unless otherwise specified.
-

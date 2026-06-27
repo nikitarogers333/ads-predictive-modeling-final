@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import shutil
 import subprocess
 import textwrap
 from pathlib import Path
@@ -273,7 +274,7 @@ def build_pptx(summary, video_slides):
                 "Use model scores to rank wines for extra sensory review.",
                 "Do not use the model as the only quality decision.",
                 "Improve with more wine types, producer information, vintage data, and external validation.",
-                "Document AI assistance and review all code before submission.",
+                "AI assistance is disclosed in the report and repository.",
             ],
             "image": FIGURES / "predictor_boxplots.png",
         },
@@ -444,7 +445,7 @@ def build_slide_content(summary):
                 "Chemistry data can identify useful signal for quality screening.",
                 "Use output as ranked shortlist, not final judgment.",
                 "Best use is prioritizing additional review.",
-                "AI assistance is disclosed in report and should be reviewed before submission.",
+                "AI assistance is disclosed in the report and repository.",
             ],
             "image": None,
         },
@@ -510,7 +511,7 @@ def script_text(summary):
         ),
         (
             "Conclusion",
-            """The conclusion is that physicochemical measurements can provide useful signal for screening red wine quality. The model should be used as decision support. It can prioritize wines for additional review, but it should not make final quality decisions by itself. The best workflow is to treat model scores as a ranked shortlist, then use expert review for the final call. AI assistance was used to help organize and prepare materials, and that use is disclosed in the report. Before submission, the student should review the code, metrics, and narrative closely."""
+            """The conclusion is that physicochemical measurements can provide useful signal for screening red wine quality. The model should be used as decision support. It can prioritize wines for additional review, but it should not make final quality decisions by itself. The best workflow is to treat model scores as a ranked shortlist, then use expert review for the final call. AI assistance was used to help organize and prepare materials, and that use is disclosed in the report and repository."""
         ),
     ]
 
@@ -529,8 +530,40 @@ def write_video_script(script_parts):
 
 def tts_with_elevenlabs(script_parts):
     existing = [AUDIO / f"slide_{i:02d}.mp3" for i in range(1, len(script_parts) + 1)]
-    if all(path.exists() and path.stat().st_size > 1000 for path in existing):
+    force = os.environ.get("FORCE_REGENERATE_AUDIO") == "1"
+    if not force and all(path.exists() and path.stat().st_size > 1000 for path in existing):
         return existing
+
+    edge_tts = shutil.which("edge-tts")
+    if edge_tts:
+        files = []
+        for i, (title, text) in enumerate(script_parts, start=1):
+            out = AUDIO / f"slide_{i:02d}.mp3"
+            text_file = AUDIO / f"slide_{i:02d}.txt"
+            text_file.write_text(text, encoding="utf-8")
+            if force and out.exists():
+                out.unlink()
+            subprocess.run(
+                [
+                    edge_tts,
+                    "--voice",
+                    os.environ.get("EDGE_TTS_VOICE", "en-US-GuyNeural"),
+                    f"--rate={os.environ.get('EDGE_TTS_RATE', '-18%')}",
+                    "--file",
+                    str(text_file),
+                    "--write-media",
+                    str(out),
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            files.append(out)
+        (DOCS / "narration_note.txt").write_text(
+            "Used Microsoft Edge neural TTS with one consistent voice for all slides.",
+            encoding="utf-8",
+        )
+        return files
 
     api_keys = [
         os.environ.get("ELEVEN_LABS_API_KEY"),

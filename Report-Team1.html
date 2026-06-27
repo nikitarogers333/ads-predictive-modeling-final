@@ -1674,7 +1674,9 @@ library(randomForest)
 library(rpart)
 library(pROC)
 library(knitr)
-library(jsonlite)</code></pre>
+library(jsonlite)
+library(scales)
+library(tibble)</code></pre>
 <div id="abstract" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Abstract</h1>
 <p>This project uses the UCI Wine Quality red wine dataset to build and
@@ -1698,12 +1700,13 @@ replacement for sensory evaluation.</p>
 Disclosure</h1>
 <p>AI-assisted tools were used to help organize the report structure,
 draft explanatory language, create reproducible code scaffolding, and
-prepare presentation materials. The modeling workflow, code execution,
-output review, and final interpretation were checked in this project
-repository. AI was used as a support tool and is disclosed here because
-the assignment requires explicit attribution. The final submission
-should be reviewed by the student before submission so that all methods,
-code, and conclusions can be explained independently.</p>
+prepare presentation materials. AI was not used as a substitute for the
+required predictive modeling workflow. The report includes the code,
+model outputs, interpretation, and references needed to inspect the
+analysis independently. AI assistance is disclosed here because the
+assignment requires explicit attribution and because the author remains
+responsible for understanding, explaining, and defending the submitted
+work.</p>
 </div>
 <div id="problem-statement" class="section level1" number="3">
 <h1><span class="header-section-number">3</span> Problem Statement</h1>
@@ -2069,7 +2072,7 @@ Structure</h2>
   select(-quality) %&gt;%
   cor() %&gt;%
   as.data.frame() %&gt;%
-  tibble::rownames_to_column(&quot;var1&quot;) %&gt;%
+  rownames_to_column(&quot;var1&quot;) %&gt;%
   pivot_longer(-var1, names_to = &quot;var2&quot;, values_to = &quot;correlation&quot;)
 
 p_cor &lt;- ggplot(cor_df, aes(x = var1, y = var2, fill = correlation)) +
@@ -2523,6 +2526,11 @@ for each model using F1 score. A fixed threshold of 0.50 would be too
 blunt for an imbalanced target because only a small percentage of wines
 are high quality. Using cross-validation to choose the threshold makes
 the decision rule more aligned with the screening goal.</p>
+<p>The final model family and tuning setting were selected from the
+cross-validation results before evaluating the held-out test set. This
+avoids using the test set as a model-selection tool. The test set is
+used only once at the end to estimate performance for the selected
+workflow.</p>
 </div>
 </div>
 <div id="final-model-evaluation" class="section level1" number="9">
@@ -2566,22 +2574,31 @@ test_results &lt;- bind_rows(
   classification_metrics(test_data$high_quality, prob_rf, best_rf$threshold) %&gt;%
     mutate(model = &quot;Random forest&quot;, parameter = best_rf$parameter)
 ) %&gt;%
-  select(model, parameter, threshold, accuracy, sensitivity, specificity, precision, f1, auc) %&gt;%
-  arrange(desc(auc), desc(f1))
+  select(model, parameter, threshold, accuracy, sensitivity, specificity, precision, f1, auc)
 
-kable(test_results, digits = 3, caption = &quot;Final test-set performance.&quot;)</code></pre>
-<table style="width:100%;">
-<caption>Final test-set performance.</caption>
+test_results_display &lt;- test_results %&gt;%
+  mutate(selected_by_cv = ifelse(
+    model == cv_results$model[1] &amp; parameter == cv_results$parameter[1],
+    &quot;Yes&quot;,
+    &quot;No&quot;
+  )) %&gt;%
+  arrange(desc(selected_by_cv), desc(auc), desc(f1))
+
+kable(test_results_display, digits = 3, caption = &quot;Final test-set performance. Selected model was chosen from cross-validation before test evaluation.&quot;)</code></pre>
+<table>
+<caption>Final test-set performance. Selected model was chosen from
+cross-validation before test evaluation.</caption>
 <colgroup>
-<col width="21%" />
+<col width="18%" />
+<col width="9%" />
+<col width="9%" />
+<col width="8%" />
 <col width="10%" />
 <col width="10%" />
 <col width="9%" />
-<col width="12%" />
-<col width="12%" />
-<col width="10%" />
-<col width="6%" />
-<col width="6%" />
+<col width="5%" />
+<col width="5%" />
+<col width="13%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -2594,6 +2611,7 @@ kable(test_results, digits = 3, caption = &quot;Final test-set performance.&quot
 <th align="right">precision</th>
 <th align="right">f1</th>
 <th align="right">auc</th>
+<th align="left">selected_by_cv</th>
 </tr>
 </thead>
 <tbody>
@@ -2607,6 +2625,7 @@ kable(test_results, digits = 3, caption = &quot;Final test-set performance.&quot
 <td align="right">0.583</td>
 <td align="right">0.673</td>
 <td align="right">0.927</td>
+<td align="left">Yes</td>
 </tr>
 <tr class="even">
 <td align="left">Logistic regression</td>
@@ -2618,6 +2637,7 @@ kable(test_results, digits = 3, caption = &quot;Final test-set performance.&quot
 <td align="right">0.490</td>
 <td align="right">0.516</td>
 <td align="right">0.890</td>
+<td align="left">No</td>
 </tr>
 <tr class="odd">
 <td align="left">Decision tree</td>
@@ -2629,16 +2649,27 @@ kable(test_results, digits = 3, caption = &quot;Final test-set performance.&quot
 <td align="right">0.363</td>
 <td align="right">0.489</td>
 <td align="right">0.869</td>
+<td align="left">No</td>
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>final_model_name &lt;- test_results$model[1]
-final_threshold &lt;- test_results$threshold[1]
-final_auc &lt;- test_results$auc[1]
-final_f1 &lt;- test_results$f1[1]
-final_accuracy &lt;- test_results$accuracy[1]
-final_sensitivity &lt;- test_results$sensitivity[1]
-final_specificity &lt;- test_results$specificity[1]
+<pre class="r"><code>selected_cv &lt;- cv_results %&gt;%
+  arrange(desc(auc), desc(f1)) %&gt;%
+  slice(1)
+
+final_model_name &lt;- selected_cv$model
+final_parameter &lt;- selected_cv$parameter
+final_threshold &lt;- selected_cv$threshold
+
+final_test_row &lt;- test_results %&gt;%
+  filter(model == final_model_name, parameter == final_parameter) %&gt;%
+  slice(1)
+
+final_auc &lt;- final_test_row$auc
+final_f1 &lt;- final_test_row$f1
+final_accuracy &lt;- final_test_row$accuracy
+final_sensitivity &lt;- final_test_row$sensitivity
+final_specificity &lt;- final_test_row$specificity
 
 prob_final &lt;- switch(
   final_model_name,
@@ -2676,9 +2707,11 @@ kable(final_confusion, caption = paste(&quot;Final confusion matrix:&quot;, fina
 </tr>
 </tbody>
 </table>
-<p>The best test-set model is <strong>Random forest</strong>. On the
-held-out test set, it produced ROC AUC of 0.927, F1 score of 0.673,
-accuracy of 0.894, sensitivity of 0.795, and specificity of 0.91.</p>
+<p>The cross-validation-selected final model is <strong>Random
+forest</strong> with <strong>mtry=4</strong> and a probability threshold
+of <strong>0.27</strong>. On the held-out test set, it produced ROC AUC
+of 0.927, F1 score of 0.673, accuracy of 0.894, sensitivity of 0.795,
+and specificity of 0.91.</p>
 <p>Accuracy alone is not enough because the high quality class is small.
 The final model is selected by prioritizing AUC and F1 score. This makes
 the result more useful for screening high quality wines instead of
@@ -2861,8 +2894,9 @@ dataset before deployment.</p>
 <p>This project framed wine quality screening as a binary predictive
 modeling problem and compared logistic regression, decision tree, and
 random forest models in R. The final model, <strong>Random
-forest</strong>, achieved test-set ROC AUC of 0.927 and F1 score of
-0.673 for the high quality class. The model is useful because it can
+forest</strong>, was selected from cross-validation before held-out test
+evaluation. It achieved test-set ROC AUC of 0.927 and F1 score of 0.673
+for the high quality class. The model is useful because it can
 prioritize wines for additional sensory review using routine laboratory
 data. The recommendation is to use the model as a decision-support
 screen, not as an automated replacement for expert tasting.</p>

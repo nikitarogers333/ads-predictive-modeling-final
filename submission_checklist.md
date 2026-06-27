@@ -43,7 +43,7 @@ Solo project: Nikita Rogers.
 - [x] Script drafted for 10-15 minute narrated presentation
 - [x] Technical explanation included
 - [x] Slides planned as superset of executive summary
-- [x] ElevenLabs narration attempted and used until account quota blocked remaining slides
+- [x] Consistent narrated MP4 generated from the final script
 - [x] MP4 generated as `Video_Presentation-Team1.mp4`
 
 ## Final Submission Package

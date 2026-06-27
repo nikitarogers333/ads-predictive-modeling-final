@@ -126,5 +126,4 @@ The conclusion is that physicochemical measurements can provide useful signal fo
 quality. The model should be used as decision support. It can prioritize wines for additional
 review, but it should not make final quality decisions by itself. The best workflow is to treat
 model scores as a ranked shortlist, then use expert review for the final call. AI assistance was
-used to help organize and prepare materials, and that use is disclosed in the report. Before
-submission, the student should review the code, metrics, and narrative closely.
+used to help organize and prepare materials, and that use is disclosed in the report and repository.

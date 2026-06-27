@@ -33,6 +33,8 @@ library(rpart)
 library(pROC)
 library(knitr)
 library(jsonlite)
+library(scales)
+library(tibble)
 ```
 
 # Abstract
@@ -41,7 +43,7 @@ This project uses the UCI Wine Quality red wine dataset to build and evaluate pr
 
 # AI-Assisted Work Disclosure
 
-AI-assisted tools were used to help organize the report structure, draft explanatory language, create reproducible code scaffolding, and prepare presentation materials. The modeling workflow, code execution, output review, and final interpretation were checked in this project repository. AI was used as a support tool and is disclosed here because the assignment requires explicit attribution. The final submission should be reviewed by the student before submission so that all methods, code, and conclusions can be explained independently.
+AI-assisted tools were used to help organize the report structure, draft explanatory language, create reproducible code scaffolding, and prepare presentation materials. AI was not used as a substitute for the required predictive modeling workflow. The report includes the code, model outputs, interpretation, and references needed to inspect the analysis independently. AI assistance is disclosed here because the assignment requires explicit attribution and because the author remains responsible for understanding, explaining, and defending the submitted work.
 
 # Problem Statement
 
@@ -90,7 +92,7 @@ predictor_n <- ncol(model_data) - 1
 high_rate <- mean(wine$high_quality == "High")
 ```
 
-The dataset contains `r rows_n` observations and `r cols_n` variables. There are `r predictor_n` candidate predictors after removing the original multiclass quality score from the model data. The high quality class represents `r scales::percent(high_rate, accuracy = 0.1)` of observations, so model evaluation must pay attention to sensitivity, precision, and F1 score in addition to accuracy.
+The dataset contains `r rows_n` observations and `r cols_n` variables. There are `r predictor_n` candidate predictors after removing the original multiclass quality score from the model data. The high quality class represents `r percent(high_rate, accuracy = 0.1)` of observations, so model evaluation must pay attention to sensitivity, precision, and F1 score in addition to accuracy.
 
 ```{r data-dictionary}
 data_dictionary <- data.frame(
@@ -211,7 +213,7 @@ cor_df <- raw_wine %>%
   select(-quality) %>%
   cor() %>%
   as.data.frame() %>%
-  tibble::rownames_to_column("var1") %>%
+  rownames_to_column("var1") %>%
   pivot_longer(-var1, names_to = "var2", values_to = "correlation")
 
 p_cor <- ggplot(cor_df, aes(x = var1, y = var2, fill = correlation)) +
@@ -446,6 +448,8 @@ kable(cv_results, digits = 3, caption = "Cross-validation results with threshold
 
 Cross-validation was used for two purposes. First, it compared model families and model settings. Second, it selected a probability threshold for each model using F1 score. A fixed threshold of 0.50 would be too blunt for an imbalanced target because only a small percentage of wines are high quality. Using cross-validation to choose the threshold makes the decision rule more aligned with the screening goal.
 
+The final model family and tuning setting were selected from the cross-validation results before evaluating the held-out test set. This avoids using the test set as a model-selection tool. The test set is used only once at the end to estimate performance for the selected workflow.
+
 # Final Model Evaluation
 
 ```{r final-model-fit}
@@ -487,20 +491,37 @@ test_results <- bind_rows(
   classification_metrics(test_data$high_quality, prob_rf, best_rf$threshold) %>%
     mutate(model = "Random forest", parameter = best_rf$parameter)
 ) %>%
-  select(model, parameter, threshold, accuracy, sensitivity, specificity, precision, f1, auc) %>%
-  arrange(desc(auc), desc(f1))
+  select(model, parameter, threshold, accuracy, sensitivity, specificity, precision, f1, auc)
 
-kable(test_results, digits = 3, caption = "Final test-set performance.")
+test_results_display <- test_results %>%
+  mutate(selected_by_cv = ifelse(
+    model == cv_results$model[1] & parameter == cv_results$parameter[1],
+    "Yes",
+    "No"
+  )) %>%
+  arrange(desc(selected_by_cv), desc(auc), desc(f1))
+
+kable(test_results_display, digits = 3, caption = "Final test-set performance. Selected model was chosen from cross-validation before test evaluation.")
 ```
 
 ```{r final-selection}
-final_model_name <- test_results$model[1]
-final_threshold <- test_results$threshold[1]
-final_auc <- test_results$auc[1]
-final_f1 <- test_results$f1[1]
-final_accuracy <- test_results$accuracy[1]
-final_sensitivity <- test_results$sensitivity[1]
-final_specificity <- test_results$specificity[1]
+selected_cv <- cv_results %>%
+  arrange(desc(auc), desc(f1)) %>%
+  slice(1)
+
+final_model_name <- selected_cv$model
+final_parameter <- selected_cv$parameter
+final_threshold <- selected_cv$threshold
+
+final_test_row <- test_results %>%
+  filter(model == final_model_name, parameter == final_parameter) %>%
+  slice(1)
+
+final_auc <- final_test_row$auc
+final_f1 <- final_test_row$f1
+final_accuracy <- final_test_row$accuracy
+final_sensitivity <- final_test_row$sensitivity
+final_specificity <- final_test_row$specificity
 
 prob_final <- switch(
   final_model_name,
@@ -518,7 +539,7 @@ final_confusion <- table(Predicted = pred_final, Actual = test_data$high_quality
 kable(final_confusion, caption = paste("Final confusion matrix:", final_model_name))
 ```
 
-The best test-set model is **`r final_model_name`**. On the held-out test set, it produced ROC AUC of `r round(final_auc, 3)`, F1 score of `r round(final_f1, 3)`, accuracy of `r round(final_accuracy, 3)`, sensitivity of `r round(final_sensitivity, 3)`, and specificity of `r round(final_specificity, 3)`.
+The cross-validation-selected final model is **`r final_model_name`** with **`r final_parameter`** and a probability threshold of **`r round(final_threshold, 2)`**. On the held-out test set, it produced ROC AUC of `r round(final_auc, 3)`, F1 score of `r round(final_f1, 3)`, accuracy of `r round(final_accuracy, 3)`, sensitivity of `r round(final_sensitivity, 3)`, and specificity of `r round(final_specificity, 3)`.
 
 Accuracy alone is not enough because the high quality class is small. The final model is selected by prioritizing AUC and F1 score. This makes the result more useful for screening high quality wines instead of merely predicting the majority class.
 
@@ -634,7 +655,7 @@ There are several ways to improve this analysis in a production setting. First, 
 
 # Conclusion
 
-This project framed wine quality screening as a binary predictive modeling problem and compared logistic regression, decision tree, and random forest models in R. The final model, **`r final_model_name`**, achieved test-set ROC AUC of `r round(final_auc, 3)` and F1 score of `r round(final_f1, 3)` for the high quality class. The model is useful because it can prioritize wines for additional sensory review using routine laboratory data. The recommendation is to use the model as a decision-support screen, not as an automated replacement for expert tasting.
+This project framed wine quality screening as a binary predictive modeling problem and compared logistic regression, decision tree, and random forest models in R. The final model, **`r final_model_name`**, was selected from cross-validation before held-out test evaluation. It achieved test-set ROC AUC of `r round(final_auc, 3)` and F1 score of `r round(final_f1, 3)` for the high quality class. The model is useful because it can prioritize wines for additional sensory review using routine laboratory data. The recommendation is to use the model as a decision-support screen, not as an automated replacement for expert tasting.
 
 # References
 

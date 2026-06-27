@@ -7,7 +7,7 @@ Final files:
 - `video_narration.mp3`
 - `Video_Presentation-Team1.mp4`
 
-Final length: about 10 minutes and 20 seconds.
+Final length: about 10 minutes and 8 seconds.
 
 Audience: technical peers and instructor.
 
@@ -38,4 +38,3 @@ Audience: technical peers and instructor.
 - Validation and test-set performance.
 - Final model selection.
 - Interpretation, limitations, conclusion, and AI-use disclosure.
-
