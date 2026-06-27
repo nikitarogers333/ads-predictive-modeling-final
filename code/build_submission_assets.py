@@ -535,45 +535,13 @@ def tts_with_elevenlabs(script_parts):
     if not force and all(path.exists() and path.stat().st_size > 1000 for path in existing):
         return existing
 
-    edge_tts = shutil.which("edge-tts")
-    if edge_tts:
-        files = []
-        for i, (title, text) in enumerate(script_parts, start=1):
-            out = AUDIO / f"slide_{i:02d}.mp3"
-            text_file = AUDIO / f"slide_{i:02d}.txt"
-            text_file.write_text(text, encoding="utf-8")
-            if force and out.exists():
-                out.unlink()
-            subprocess.run(
-                [
-                    edge_tts,
-                    "--voice",
-                    os.environ.get("EDGE_TTS_VOICE", "en-US-GuyNeural"),
-                    f"--rate={os.environ.get('EDGE_TTS_RATE', '-18%')}",
-                    "--file",
-                    str(text_file),
-                    "--write-media",
-                    str(out),
-                ],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            files.append(out)
-        (DOCS / "narration_note.txt").write_text(
-            "Used Microsoft Edge neural TTS with one consistent voice for all slides.",
-            encoding="utf-8",
-        )
-        return files
-
     api_keys = [
         os.environ.get("ELEVEN_LABS_API_KEY"),
         os.environ.get("ELEVENLABS_API_KEY"),
     ]
     api_keys = [key for key in api_keys if key]
     preferred_voice_id = os.environ.get("ELEVEN_LABS_VOICE_ID")
-    fallback_voice_id = "TX3LPaxmHKxFdv7VOQHJ"
-    fallback_voice_name = "Liam - Energetic, Social Media Creator"
+
     def local_tts(text, out):
         txt = out.with_suffix(".txt")
         wav = out.with_suffix(".wav")
@@ -592,6 +560,8 @@ def tts_with_elevenlabs(script_parts):
         )
 
     if not api_keys or not preferred_voice_id:
+        if os.environ.get("ALLOW_NON_NIK_TTS") != "1":
+            raise RuntimeError("Nik voice unavailable. Set ELEVEN_LABS_API_KEY and ELEVEN_LABS_VOICE_ID, or provide recorded narration.")
         files = []
         for i, (title, text) in enumerate(script_parts, start=1):
             out = AUDIO / f"slide_{i:02d}.mp3"
@@ -607,7 +577,7 @@ def tts_with_elevenlabs(script_parts):
     files = []
     selected_key = None
     selected_voice = preferred_voice_id
-    selected_voice_note = "Preferred saved voice."
+    selected_voice_note = "Used Nik's cloned ElevenLabs voice."
 
     def try_request(api_key, voice_id, text):
         endpoint = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
@@ -636,19 +606,14 @@ def tts_with_elevenlabs(script_parts):
             selected_key = api_key
             break
         last_error = response.text[:500]
-        response = try_request(api_key, fallback_voice_id, first_text)
-        if response.status_code == 200:
-            selected_key = api_key
-            selected_voice = fallback_voice_id
-            selected_voice_note = f"Preferred saved voice unavailable. Used premade fallback voice: {fallback_voice_name}."
-            break
-        last_error = response.text[:500]
 
     if not selected_key:
         (DOCS / "narration_note.txt").write_text(
             "ElevenLabs narration could not be generated. Used local TTS fallback. Last API error: " + last_error,
             encoding="utf-8",
         )
+        if os.environ.get("ALLOW_NON_NIK_TTS") != "1":
+            raise RuntimeError("Nik voice generation failed. Last ElevenLabs error: " + last_error)
         files = []
         for i, (title, text) in enumerate(script_parts, start=1):
             out = AUDIO / f"slide_{i:02d}.mp3"
@@ -671,6 +636,8 @@ def tts_with_elevenlabs(script_parts):
             note_lines.append(
                 f"Slide {i} used local TTS fallback because ElevenLabs returned {response.status_code}: {response.text[:300]}"
             )
+            if os.environ.get("ALLOW_NON_NIK_TTS") != "1":
+                raise RuntimeError(f"Nik voice generation failed on slide {i}: {response.text[:300]}")
             local_tts(text, out)
         files.append(out)
     (DOCS / "narration_note.txt").write_text("\n".join(note_lines), encoding="utf-8")
