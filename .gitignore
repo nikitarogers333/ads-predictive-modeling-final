@@ -13,7 +13,8 @@ __pycache__/
 !Video_Presentation_Slides-Team1.pptx
 data/raw/
 data/*.csv
-!data/winequality-red.csv
+!data/online_shoppers_intention.csv
+data/*.zip
 data/*.xlsx
 audio/slide_*.mp3
 audio/*.wav

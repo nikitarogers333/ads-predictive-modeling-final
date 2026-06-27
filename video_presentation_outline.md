@@ -7,7 +7,7 @@ Final files:
 - `video_narration.mp3`
 - `Video_Presentation-Team1.mp4`
 
-Final length: about 10 minutes and 8 seconds.
+Final length: about 10 minutes and 15 seconds.
 
 Audience: technical peers and instructor.
 

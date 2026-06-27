@@ -30,20 +30,20 @@ def read_summary():
     summary_path = DOCS / "model_summary.json"
     if not summary_path.exists():
         return {
-            "rows": 1599,
-            "high_quality_rate": 0.136,
+            "rows": 12330,
+            "purchase_rate": 0.155,
             "final_model": "Random forest",
-            "final_auc": 0.85,
-            "final_f1": 0.55,
-            "final_accuracy": 0.88,
-            "final_sensitivity": 0.60,
-            "final_specificity": 0.92,
+            "final_auc": 0.935,
+            "final_f1": 0.716,
+            "final_accuracy": 0.909,
+            "final_sensitivity": 0.738,
+            "final_specificity": 0.941,
             "top_predictors": [
-                {"predictor": "alcohol"},
-                {"predictor": "volatile acidity"},
-                {"predictor": "sulphates"},
-                {"predictor": "density"},
-                {"predictor": "total sulfur dioxide"},
+                {"predictor": "PageValues"},
+                {"predictor": "ExitRates"},
+                {"predictor": "ProductRelated_Duration"},
+                {"predictor": "Month"},
+                {"predictor": "ProductRelated"},
             ],
         }
     with open(summary_path, "r", encoding="utf-8") as f:
@@ -221,25 +221,26 @@ def add_picture_if_exists(slide, image_path, left=7.05, top=1.55, width=5.55, he
 def build_pptx(summary, video_slides):
     final_model = summary["final_model"]
     top_preds = [item["predictor"] for item in summary.get("top_predictors", [])[:5]]
+    subtitle = "Predicting Online Purchase Conversion From Session Behavior"
 
     executive = [
         {
             "title": "Problem And Data",
             "bullets": [
-                "Goal: predict whether a red wine will receive a high sensory quality score.",
-                f"Dataset: UCI red wine quality data with {summary['rows']:,} samples.",
-                f"High quality wines are the minority class: {pct(summary['high_quality_rate'])} of rows.",
-                "Business use: screen wines for extra review before using scarce tasting-panel time.",
+                "Goal: predict whether an online shopping session will generate revenue.",
+                f"Dataset: UCI online shoppers data with {summary['rows']:,} sessions.",
+                f"Purchases are the minority class: {pct(summary['purchase_rate'])} of rows.",
+                "Business use: rank sessions for targeted marketing or on-site intervention.",
             ],
-            "image": FIGURES / "quality_distribution.png",
+            "image": FIGURES / "purchase_distribution.png",
         },
         {
             "title": "Modeling Approach",
             "bullets": [
-                "Created binary target: quality score 7 or higher equals High.",
+                "Created binary target from the Revenue field.",
                 "Used stratified training and test split to preserve class balance.",
                 "Compared logistic regression, decision tree, and random forest.",
-                "Used 5-fold cross-validation for tuning and threshold selection.",
+                "Used cross-validation for tuning and threshold selection.",
             ],
             "image": FIGURES / "correlation_heatmap.png",
         },
@@ -249,7 +250,7 @@ def build_pptx(summary, video_slides):
                 f"Selected model: {final_model}.",
                 f"Test ROC AUC: {num(summary['final_auc'])}.",
                 f"Test F1 score: {num(summary['final_f1'])}.",
-                "Threshold selected to balance precision and sensitivity for high quality wines.",
+                "Threshold selected to balance precision and sensitivity for purchase sessions.",
             ],
             "image": FIGURES / "roc_curves.png",
             "cards": [
@@ -263,20 +264,20 @@ def build_pptx(summary, video_slides):
             "bullets": [
                 "Most important predictors in the tree ensemble:",
                 ", ".join(top_preds) + ".",
-                "These measurements are plausible quality signals, but they do not replace tasting.",
-                "Model should be used as a prioritization layer.",
+                "These are predictive signals, not proof of causation.",
+                "Model scores should be used as a prioritization layer.",
             ],
             "image": FIGURES / "variable_importance.png",
         },
         {
             "title": "Recommendation",
             "bullets": [
-                "Use model scores to rank wines for extra sensory review.",
-                "Do not use the model as the only quality decision.",
-                "Improve with more wine types, producer information, vintage data, and external validation.",
+                "Use model scores to rank sessions for controlled marketing experiments.",
+                "Do not assume an intervention creates incremental revenue without A/B testing.",
+                "Improve with product, customer, pricing, margin, and campaign data.",
                 "AI assistance is disclosed in the report and repository.",
             ],
-            "image": FIGURES / "predictor_boxplots.png",
+            "image": FIGURES / "session_behavior_boxplots.png",
         },
     ]
 
@@ -287,7 +288,7 @@ def build_pptx(summary, video_slides):
         blank = prs.slide_layouts[6]
         for s in slides:
             slide = prs.slides.add_slide(blank)
-            add_title(slide, s["title"], "Predicting High Quality Wine From Physicochemical Measurements")
+            add_title(slide, s["title"], subtitle)
             add_bullets(slide, s["bullets"], width=5.95, size=17)
             if "cards" in s:
                 add_metric_cards(slide, s["cards"])
@@ -306,48 +307,48 @@ def build_slide_content(summary):
         {
             "title": "Problem Statement",
             "bullets": [
-                "Predict whether red wine will receive a high sensory quality score.",
-                "Frame quality score 7 or higher as High.",
-                "Use chemistry measurements to support early screening decisions.",
-                "Model is decision support, not replacement for expert tasting.",
+                "Predict whether an online shopping session will generate revenue.",
+                "Frame Revenue as Purchase versus NoPurchase.",
+                "Use session behavior to support targeted marketing decisions.",
+                "Model is decision support, not automatic customer treatment.",
             ],
-            "image": FIGURES / "quality_distribution.png",
+            "image": FIGURES / "purchase_distribution.png",
         },
         {
             "title": "Business Motivation",
             "bullets": [
-                "Tasting panels are valuable but limited.",
-                "Lab measurements are faster and cheaper to collect.",
-                "A model can rank wines before extra review.",
-                "Goal is prioritization, not automatic approval.",
+                "Most shopping sessions do not purchase.",
+                "Marketing and support interventions have limited capacity.",
+                "A model can rank sessions by purchase intent.",
+                "Goal is prioritization and experiment design.",
             ],
-            "image": None,
+            "image": FIGURES / "conversion_by_month.png",
         },
         {
             "title": "Dataset",
             "bullets": [
-                f"UCI red wine quality dataset with {summary['rows']:,} observations.",
-                "Each row is one wine sample.",
-                "Predictors are acidity, sugar, chlorides, sulfur dioxide, density, pH, sulphates, and alcohol.",
-                "Original response is sensory quality rating.",
+                f"UCI online shoppers dataset with {summary['rows']:,} sessions.",
+                "Each row is one website visit session.",
+                "Predictors include page counts, durations, bounce and exit rates, month, visitor type, and traffic source.",
+                "Original response is whether the session generated revenue.",
             ],
-            "image": FIGURES / "predictor_boxplots.png",
+            "image": FIGURES / "session_behavior_boxplots.png",
         },
         {
             "title": "Target And Class Balance",
             "bullets": [
-                "Binary target: High versus NotHigh.",
-                f"High quality class is {pct(summary['high_quality_rate'])} of rows.",
+                "Binary target: Purchase versus NoPurchase.",
+                f"Purchase class is {pct(summary['purchase_rate'])} of rows.",
                 "Accuracy alone can be misleading.",
                 "Evaluation must include sensitivity, precision, F1, and AUC.",
             ],
-            "image": FIGURES / "quality_distribution.png",
+            "image": FIGURES / "purchase_distribution.png",
         },
         {
             "title": "EDA Findings",
             "bullets": [
-                "High quality wines tend to show higher alcohol and sulphates.",
-                "They tend to show lower volatile acidity and lower density.",
+                "Purchase sessions show higher page value and product engagement.",
+                "No-purchase sessions show higher bounce and exit rates.",
                 "Predictor overlap means perfect classification is unrealistic.",
                 "Correlated predictors support comparing several model types.",
             ],
@@ -356,10 +357,10 @@ def build_slide_content(summary):
         {
             "title": "Preprocessing",
             "bullets": [
-                "Converted original quality rating into a binary target.",
-                "Removed original quality score from model inputs to avoid leakage.",
+                "Converted Revenue into a binary purchase target.",
+                "Removed original Revenue field from model inputs to avoid leakage.",
                 "Checked missing values: none in the downloaded file.",
-                "Standardized numeric predictors for logistic regression.",
+                "Collapsed rare technical categories and standardized numeric predictors for logistic regression.",
             ],
             "image": None,
         },
@@ -376,7 +377,7 @@ def build_slide_content(summary):
         {
             "title": "Validation Design",
             "bullets": [
-                "Used stratified 5-fold cross-validation.",
+                "Used stratified cross-validation.",
                 "Tuned decision tree complexity.",
                 "Tuned random forest mtry.",
                 "Selected probability thresholds from validation predictions.",
@@ -389,7 +390,7 @@ def build_slide_content(summary):
                 "Logistic regression created a transparent baseline.",
                 "Decision tree tested simple non-linear rules.",
                 "Random forest tested stronger non-linear performance.",
-                "Final choice balances ranking quality and high-class detection.",
+                "Final choice balances ranking quality and purchase-class detection.",
             ],
             "image": None,
         },
@@ -397,8 +398,8 @@ def build_slide_content(summary):
             "title": "Metrics",
             "bullets": [
                 "ROC AUC measures ranking quality across thresholds.",
-                "Sensitivity measures how many high quality wines are found.",
-                "Precision measures how many predicted high wines are truly high.",
+                "Sensitivity measures how many purchase sessions are found.",
+                "Precision measures how many predicted purchases are true purchases.",
                 "F1 balances sensitivity and precision.",
             ],
             "image": FIGURES / "roc_curves.png",
@@ -424,7 +425,7 @@ def build_slide_content(summary):
             "bullets": [
                 "Top predictors in random forest:",
                 ", ".join(top_preds) + ".",
-                "These variables help rank wines by probability of high quality.",
+                "These variables help rank sessions by purchase probability.",
                 "Variable importance is predictive, not causal.",
             ],
             "image": FIGURES / "variable_importance.png",
@@ -432,19 +433,19 @@ def build_slide_content(summary):
         {
             "title": "Limitations And Next Steps",
             "bullets": [
-                "Dataset covers one wine type and region.",
-                "Missing business variables: brand, price, vintage, producer, market.",
-                "Need external validation before operational use.",
-                "Next step: calibrate probabilities and test on newer data.",
+                "Dataset comes from one e-commerce context.",
+                "Missing business variables: product, price, customer history, margin, and campaign cost.",
+                "Verify PageValues availability before real-time deployment.",
+                "Next step: calibrate probabilities and A/B test interventions.",
             ],
             "image": None,
         },
         {
             "title": "Conclusion",
             "bullets": [
-                "Chemistry data can identify useful signal for quality screening.",
-                "Use output as ranked shortlist, not final judgment.",
-                "Best use is prioritizing additional review.",
+                "Session behavior can identify useful conversion-intent signal.",
+                "Use output as ranked shortlist, not final customer-treatment rule.",
+                "Best use is prioritizing controlled marketing experiments.",
                 "AI assistance is disclosed in the report and repository.",
             ],
             "image": None,
@@ -459,59 +460,59 @@ def script_text(summary):
     return [
         (
             "Problem Statement",
-            f"""This presentation summarizes my predictive modeling project. The goal is to predict whether a red wine will receive a high sensory quality rating from basic chemistry measurements. I converted the original quality score into a binary target. A wine rated seven or higher is treated as high quality. Wines below seven are treated as not high quality. This is useful because organizations often need to decide which products deserve extra review, more tasting-panel time, or premium positioning. The model is not intended to replace human tasting. It is a decision-support layer that ranks wines and helps focus limited attention."""
+            """This presentation summarizes my predictive modeling project. The goal is to predict whether an online shopping session will generate revenue from behavior observed during the visit. I converted the original Revenue field into a binary target called Purchase versus NoPurchase. This framing is useful because e-commerce teams often need to decide which sessions deserve a marketing action, live support, or retargeting follow-up. The model is not intended to make automatic customer-treatment decisions by itself. It is a decision-support layer that ranks sessions by estimated purchase intent."""
         ),
         (
             "Business Motivation",
-            """The practical motivation is resource allocation. Tasting panels and expert reviews are valuable, but they take time and coordination. Chemistry measurements are more standardized and can be collected earlier in the process. If a model can identify wines that are more likely to score well, the business can send those wines to a deeper review first. That does not mean the model makes the final decision. It means the model helps create a shortlist. In a real workflow, that shortlist would still be checked by people with domain knowledge."""
+            """The practical motivation is resource allocation. Most website sessions do not purchase, and interventions are not free. Discounts can reduce margin, retargeting costs money, and live support has limited capacity. If a model can identify sessions that are more likely to buy, the business can prioritize those sessions for controlled experiments. That does not prove an intervention creates incremental revenue. It means the model gives the business a stronger shortlist for testing than broad untargeted rules."""
         ),
         (
             "Dataset",
-            f"""The project uses the UCI Wine Quality red wine dataset. It contains {summary['rows']:,} red wine samples. Each row represents one wine, and each column records either a chemical property or the sensory quality score. The predictors include fixed acidity, volatile acidity, citric acid, residual sugar, chlorides, free sulfur dioxide, total sulfur dioxide, density, pH, sulphates, and alcohol. The response variable was engineered from the original quality rating. This dataset is a good fit for the assignment because it is clean, numeric, reproducible, and directly supports a classification problem."""
+            f"""The project uses the UCI Online Shoppers Purchasing Intention dataset. It contains {summary['rows']:,} website sessions. Each row represents one visit session. The predictors include administrative page activity, informational page activity, product-related page activity, time spent on pages, bounce rates, exit rates, page value, special day timing, month, operating system, browser, region, traffic source, visitor type, and weekend status. The response is whether the session generated revenue. This dataset is a strong fit for the assignment because it is public, reproducible, business-focused, and contains both numeric and categorical predictors."""
         ),
         (
             "Target And Class Balance",
-            f"""The target variable is imbalanced. The high quality class makes up about {pct(summary['high_quality_rate'])} of the data. That matters because a model could get a high accuracy score by predicting the majority class too often. In this project, accuracy is still reported, but it is not the main decision metric. The analysis also reports sensitivity, specificity, precision, F1 score, and ROC AUC. Sensitivity tells us how many high quality wines were found. Precision tells us how many predicted high quality wines were actually high quality. F1 balances those two ideas."""
+            f"""The target variable is imbalanced. Purchase sessions make up about {pct(summary['purchase_rate'])} of the data. That matters because a model could look accurate by predicting NoPurchase too often. In this project, accuracy is reported, but it is not the only decision metric. The analysis also reports sensitivity, specificity, precision, F1 score, and ROC AUC. Sensitivity tells us how many actual purchase sessions were found. Precision tells us how many predicted purchase sessions were truly purchases. F1 balances those two ideas."""
         ),
         (
             "EDA Findings",
-            """The exploratory analysis shows that most wines are rated in the middle of the original quality scale. The high quality group is smaller, but it has visible differences in several predictors. High quality wines tend to have higher alcohol and higher sulphates. They tend to have lower volatile acidity and lower density. These relationships make sense chemically and practically, but they are not perfect separators. The boxplots show overlap between the high and not high classes. That overlap means a perfect model is not realistic, and the model should be evaluated as a screening tool."""
+            """The exploratory analysis shows clear but imperfect signal. Purchase sessions tend to have higher page value and more product engagement. No-purchase sessions tend to show higher bounce rates and higher exit rates. Conversion rates also vary by month and visitor type, which supports including categorical predictors. The boxplots still show overlap between the purchase and no-purchase classes. That overlap is important because it means a perfect classifier is unrealistic. The model should be evaluated as a probability ranking tool, not as a simple rule that always knows who will buy."""
         ),
         (
             "Preprocessing",
-            """The preprocessing workflow was intentionally simple and reproducible. First, I created a binary target from the original quality score. Second, I removed the original quality score from the model matrix so the model could not leak the answer. Third, I checked missing values. There were no missing cells in the downloaded dataset. Fourth, I standardized numeric predictors for logistic regression, because that model benefits from comparable scales. The tree-based models were fit on the original predictor scales because trees split on thresholds and do not require standardization."""
+            """The preprocessing workflow was reproducible and focused on the modeling problem. First, I created the binary purchase target from the Revenue field. Second, I removed the original Revenue field from the model matrix so the model could not leak the answer. Third, I checked missing values and found no missing cells. Fourth, I converted month, visitor type, weekend, operating system, browser, region, and traffic type into categorical predictors. Fifth, I collapsed rare technical categories into Other. Finally, I standardized numeric predictors for logistic regression while leaving tree-based models on their original scales."""
         ),
         (
             "Data Splitting",
-            """The data was split into training and test sets using a stratified eighty-twenty split. Stratification matters here because the high quality class is small. Without stratification, the test set could accidentally contain too many or too few high quality wines, which would make evaluation unstable. The training set was used for model fitting, cross-validation, tuning, and threshold selection. The test set was held out until the final evaluation. This creates a cleaner estimate of how the selected workflow performs on data not used during model development."""
+            """The data was split into training and test sets using a stratified eighty-twenty split. Stratification matters because the purchase class is much smaller than the no-purchase class. Without stratification, the test set could accidentally contain too many or too few purchase sessions, which would make evaluation unstable. The training set was used for model fitting, cross-validation, tuning, and threshold selection. The test set was held out until the final evaluation. This gives a cleaner estimate of how the selected workflow performs on data not used during development."""
         ),
         (
             "Validation Design",
-            """For validation, I used stratified five-fold cross-validation on the training data. Each fold preserved the high versus not high class structure as much as possible. The decision tree was tuned over several complexity parameter values. The random forest was tuned over several mtry values, which control how many predictors are considered at each split. I also selected the classification threshold using the cross-validation predictions. This is important because the default threshold of zero point five is not always appropriate when the positive class is uncommon."""
+            """For validation, I used stratified cross-validation on the training data. Each fold preserved the purchase versus no-purchase class structure as much as possible. The decision tree was tuned over several complexity parameter values. The random forest was tuned over several mtry values, which control how many predictors are considered at each split. I also selected the classification threshold using the cross-validation predictions. This matters because the default threshold of zero point five is not always appropriate when the positive class is uncommon."""
         ),
         (
             "Model Strategy",
-            """I compared three model families. Logistic regression was the baseline. It is easy to interpret, and it tells us whether a simple linear probability pattern can solve the problem. The decision tree was the second model. It can capture simple non-linear threshold rules and is still fairly easy to explain. The random forest was the third model. It averages many trees and usually performs better when relationships are non-linear or interactive. The final selection prioritized ranking quality, F1 score, and practical usefulness for identifying high quality candidates."""
+            """I compared three model families. Logistic regression was the baseline. It is easy to interpret, and it tests whether a simpler linear probability pattern can solve the problem. The decision tree was the second model. It can capture simple non-linear threshold rules and is still fairly easy to explain. The random forest was the third model. It averages many trees and usually performs better when relationships are non-linear or interactive. The final selection prioritized ranking quality, F1 score, and practical usefulness for identifying purchase sessions."""
         ),
         (
             "Metrics",
-            """The main model comparison metrics were ROC AUC, F1 score, accuracy, sensitivity, specificity, and precision. ROC AUC measures how well the model ranks high quality wines above ordinary wines across possible thresholds. F1 score balances precision and sensitivity for the high quality class. Sensitivity matters because missing strong wines would reduce the value of the screening process. Precision matters because sending too many weak candidates to human reviewers wastes time. Looking at these metrics together gives a more honest view than accuracy alone."""
+            """The main model comparison metrics were ROC AUC, F1 score, accuracy, sensitivity, specificity, and precision. ROC AUC measures how well the model ranks purchase sessions above no-purchase sessions across possible thresholds. F1 score balances precision and sensitivity for the purchase class. Sensitivity matters because missing likely buyers reduces the value of the screening process. Precision matters because sending too many false positives into an intervention wastes money or support capacity. Looking at these metrics together gives a more honest view than accuracy alone."""
         ),
         (
             "Final Test Results",
-            f"""The selected final model is {final_model}. On the held-out test set, it produced a ROC AUC of {num(summary['final_auc'])}, an F1 score of {num(summary['final_f1'])}, and accuracy of {num(summary['final_accuracy'])}. Sensitivity was {num(summary['final_sensitivity'])}, and specificity was {num(summary['final_specificity'])}. These results mean the final model separated high quality wines from ordinary wines well on the test set. The model is especially useful as a ranking tool because ROC AUC evaluates the ordering of predicted probabilities rather than only one fixed cutoff."""
+            f"""The selected final model is {final_model}. On the held-out test set, it produced a ROC AUC of {num(summary['final_auc'])}, an F1 score of {num(summary['final_f1'])}, and accuracy of {num(summary['final_accuracy'])}. Sensitivity was {num(summary['final_sensitivity'])}, and specificity was {num(summary['final_specificity'])}. These results mean the final model separated purchase sessions from no-purchase sessions well on the test set. The model is especially useful as a ranking tool because ROC AUC evaluates the ordering of predicted probabilities rather than only one fixed cutoff."""
         ),
         (
             "Interpretation",
-            f"""The random forest variable importance results show which predictors were most useful for splitting the classes. The top predictors were {", ".join(top_preds)}. These are plausible drivers, but they should be interpreted carefully. Variable importance does not prove causation. It means these measurements helped the model separate wines that received higher scores from the rest of the samples. The practical interpretation is that the model can produce a ranked list of wines that are more likely to be high quality. A business could send the highest scoring wines to extra sensory review first."""
+            f"""The random forest variable importance results show which predictors were most useful for separating the classes. The top predictors were {", ".join(top_preds)}. These are plausible session-intent signals, but they should be interpreted carefully. Variable importance does not prove causation. It means these variables helped the model separate sessions that generated revenue from sessions that did not. The practical interpretation is that the model can produce a ranked list of sessions that are more likely to purchase. A business could use that ranked list to design better marketing or support experiments."""
         ),
         (
             "Limitations And Next Steps",
-            """The main limitations are the narrow dataset, the absence of brand or price information, the lack of external validation, and the fact that sensory quality is partly subjective. The dataset covers red Vinho Verde wine, so results should not be assumed to generalize to all wines. In a production setting, I would add more samples from more regions, include business variables such as price and producer, calibrate the predicted probabilities, and test the model on newer external data before using it operationally."""
+            """The main limitations are the single e-commerce context, the absence of product and customer-history variables, the lack of margin and campaign-cost data, and the need to confirm how page value would be available in a live workflow. In a production setting, I would add product category, price, inventory, customer history, acquisition channel, ad spend, and margin. I would also calibrate predicted probabilities, test a model without page value if needed, and validate any intervention with an A/B test before using it operationally."""
         ),
         (
             "Conclusion",
-            """The conclusion is that physicochemical measurements can provide useful signal for screening red wine quality. The model should be used as decision support. It can prioritize wines for additional review, but it should not make final quality decisions by itself. The best workflow is to treat model scores as a ranked shortlist, then use expert review for the final call. AI assistance was used to help organize and prepare materials, and that use is disclosed in the report and repository."""
+            """The conclusion is that online session behavior can provide useful signal for predicting purchase conversion. The model should be used as decision support. It can prioritize sessions for marketing or support experiments, but it should not be used as the only rule for customer treatment. The best workflow is to treat model scores as a ranked shortlist, then test interventions with controlled experiments. AI assistance was used to help organize and prepare materials, and that use is disclosed in the report and repository."""
         ),
     ]
 

@@ -1,10 +1,10 @@
-# Predicting High Quality Wine From Physicochemical Measurements
+# Predicting Online Purchase Conversion From Session Behavior
 
 Project Status: Final submission package complete
 
 ## Project Objective
 
-This project builds predictive models in R to classify whether a red wine is likely to receive a high sensory quality score based on laboratory physicochemical measurements. The analysis compares logistic regression, decision tree, and random forest models, evaluates performance on a held-out test set, and translates the result into a short executive summary and narrated presentation.
+This project builds predictive models in R to classify whether an online shopping session is likely to generate revenue based on session behavior and traffic attributes. The analysis compares logistic regression, decision tree, and random forest models, evaluates performance on a held-out test set, and translates the result into an executive summary and narrated presentation.
 
 ## Contributor
 
@@ -12,42 +12,46 @@ This project builds predictive models in R to classify whether a red wine is lik
 
 ## Dataset
 
-Dataset: UCI Wine Quality red wine dataset
+Dataset: UCI Online Shoppers Purchasing Intention dataset
 
-Source: https://archive.ics.uci.edu/ml/datasets/wine+quality
+Source: https://archive.ics.uci.edu/dataset/468/online+shoppers+purchasing+intention+dataset
 
-Unit of observation: one red wine sample
+Unit of observation: one online shopping session
 
-Rows: 1,599
+Rows: 12,330
 
 Prediction problem: binary classification
 
 Response variable:
 
-- `High`: original quality score is 7 or higher.
-- `NotHigh`: original quality score is below 7.
+- `Purchase`: session generated revenue.
+- `NoPurchase`: session did not generate revenue.
 
-Predictors:
+Predictors include:
 
-- fixed acidity
-- volatile acidity
-- citric acid
-- residual sugar
-- chlorides
-- free sulfur dioxide
-- total sulfur dioxide
-- density
-- pH
-- sulphates
-- alcohol
+- administrative page counts and duration
+- informational page counts and duration
+- product-related page counts and duration
+- bounce rates
+- exit rates
+- page values
+- special-day timing
+- month
+- operating system
+- browser
+- region
+- traffic type
+- visitor type
+- weekend status
 
 ## Methods Used
 
 - Exploratory data analysis
 - Missing value check
-- Feature engineering
+- Categorical preprocessing
+- Rare-category collapsing
 - Stratified train/test splitting
-- Stratified 5-fold cross-validation
+- Stratified cross-validation
 - Logistic regression
 - Decision tree tuning
 - Random forest tuning
@@ -61,6 +65,7 @@ Predictors:
 - R Markdown
 - ggplot2
 - dplyr
+- tidyr
 - readr
 - rpart
 - randomForest
@@ -98,7 +103,7 @@ Command line option:
 Rscript -e "rmarkdown::render('report.Rmd', output_file='Report-Team1.html')"
 ```
 
-The report downloads the dataset automatically if `data/winequality-red.csv` does not exist.
+The report downloads the UCI dataset automatically if `data/online_shoppers_intention.csv` does not exist.
 
 ## Deliverables
 

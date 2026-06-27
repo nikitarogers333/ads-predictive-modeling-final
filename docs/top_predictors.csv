@@ -1,7 +1,9 @@
 "predictor","importance"
-"alcohol",48.3688048468805
-"volatile acidity",32.0813392664994
-"sulphates",30.97047291766
-"density",24.415544775504
-"citric acid",22.1186260799579
-"total sulfur dioxide",19.8053133640792
+"PageValues",979.546652695858
+"ExitRates",152.477356914177
+"ProductRelated_Duration",140.325386790156
+"Month",123.127961232998
+"ProductRelated",113.031510501216
+"BounceRates",99.1430124837482
+"TrafficType",94.6538991330764
+"Region",89.2730742249323

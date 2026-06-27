@@ -1,73 +1,82 @@
 {
-  "rows": 1599,
-  "columns": 13,
-  "high_quality_rate": 0.1357,
+  "rows": 12330,
+  "columns": 19,
+  "purchase_rate": 0.1547,
   "final_model": "Random forest",
-  "final_threshold": 0.27,
-  "final_auc": 0.9271,
-  "final_f1": 0.6731,
-  "final_accuracy": 0.8941,
-  "final_sensitivity": 0.7955,
-  "final_specificity": 0.9097,
+  "final_parameter": "mtry=7",
+  "final_threshold": 0.36,
+  "final_auc": 0.935,
+  "final_f1": 0.7157,
+  "final_accuracy": 0.9092,
+  "final_sensitivity": 0.7382,
+  "final_specificity": 0.9405,
   "test_results": [
     {
       "model": "Logistic regression",
       "parameter": "none",
-      "threshold": 0.34,
-      "accuracy": 0.8598,
-      "sensitivity": 0.5455,
-      "specificity": 0.9097,
-      "precision": 0.4898,
-      "f1": 0.5161,
-      "auc": 0.8905
+      "threshold": 0.25,
+      "accuracy": 0.8889,
+      "sensitivity": 0.6126,
+      "specificity": 0.9396,
+      "precision": 0.65,
+      "f1": 0.6307,
+      "auc": 0.901
     },
     {
       "model": "Decision tree",
-      "parameter": "cp=0.001",
-      "threshold": 0.14,
-      "accuracy": 0.785,
-      "sensitivity": 0.75,
-      "specificity": 0.7906,
-      "precision": 0.3626,
-      "f1": 0.4889,
-      "auc": 0.8694
+      "parameter": "cp=5e-04",
+      "threshold": 0.16,
+      "accuracy": 0.8833,
+      "sensitivity": 0.788,
+      "specificity": 0.9007,
+      "precision": 0.5925,
+      "f1": 0.6764,
+      "auc": 0.865
     },
     {
       "model": "Random forest",
-      "parameter": "mtry=4",
-      "threshold": 0.27,
-      "accuracy": 0.8941,
-      "sensitivity": 0.7955,
-      "specificity": 0.9097,
-      "precision": 0.5833,
-      "f1": 0.6731,
-      "auc": 0.9271
+      "parameter": "mtry=7",
+      "threshold": 0.36,
+      "accuracy": 0.9092,
+      "sensitivity": 0.7382,
+      "specificity": 0.9405,
+      "precision": 0.6946,
+      "f1": 0.7157,
+      "auc": 0.935
     }
   ],
   "top_predictors": [
     {
-      "predictor": "alcohol",
-      "importance": 48.3688
+      "predictor": "PageValues",
+      "importance": 979.5467
     },
     {
-      "predictor": "volatile acidity",
-      "importance": 32.0813
+      "predictor": "ExitRates",
+      "importance": 152.4774
     },
     {
-      "predictor": "sulphates",
-      "importance": 30.9705
+      "predictor": "ProductRelated_Duration",
+      "importance": 140.3254
     },
     {
-      "predictor": "density",
-      "importance": 24.4155
+      "predictor": "Month",
+      "importance": 123.128
     },
     {
-      "predictor": "citric acid",
-      "importance": 22.1186
+      "predictor": "ProductRelated",
+      "importance": 113.0315
     },
     {
-      "predictor": "total sulfur dioxide",
-      "importance": 19.8053
+      "predictor": "BounceRates",
+      "importance": 99.143
+    },
+    {
+      "predictor": "TrafficType",
+      "importance": 94.6539
+    },
+    {
+      "predictor": "Region",
+      "importance": 89.2731
     }
   ]
 }
