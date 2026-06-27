@@ -8,7 +8,7 @@ Solo project: Nikita Rogers.
 - [x] `README.md` added
 - [x] Dataset source documented
 - [x] AI-use disclosure included
-- [ ] Final generated files committed and pushed
+- [x] Final generated files committed and pushed
 
 ## Technical Report
 
@@ -48,9 +48,9 @@ Solo project: Nikita Rogers.
 
 ## Final Submission Package
 
-- [ ] Google Drive folder created
-- [ ] Report uploaded
-- [ ] Executive summary uploaded
-- [ ] Video uploaded
-- [ ] Source zip uploaded
-- [ ] GitHub link included
+- [x] Google Drive folder created
+- [x] Report uploaded
+- [x] Executive summary uploaded
+- [x] Video uploaded
+- [x] Source zip uploaded
+- [x] GitHub link included
