@@ -1,61 +1,73 @@
-# Predictive Modeling Final Project
+# Predicting High Quality Wine From Physicochemical Measurements
 
-This project is part of the Applied Data Science program at the University of San Diego.
-
-Project Status: Planned
+Project Status: Final submission package in progress
 
 ## Project Objective
 
-The goal of this project is to identify a real-world dataset, clean and prepare the data, and build predictive models in R that answer a clearly defined business or research question. The final analysis will compare multiple modeling strategies, evaluate model performance on validation/test data, and recommend a final model with an interpretation written for both technical and non-technical audiences.
+This project builds predictive models in R to classify whether a red wine is likely to receive a high sensory quality score based on laboratory physicochemical measurements. The analysis compares logistic regression, decision tree, and random forest models, evaluates performance on a held-out test set, and translates the result into a short executive summary and narrated presentation.
 
-## Contributors
+## Contributor
 
 - Nikita Rogers
-- Teammate 1
-- Teammate 2
 
 ## Dataset
 
-Dataset: TBD
+Dataset: UCI Wine Quality red wine dataset
 
-Source: TBD
+Source: https://archive.ics.uci.edu/ml/datasets/wine+quality
 
-Response variable: TBD
+Unit of observation: one red wine sample
 
-Prediction problem: TBD
+Rows: 1,599
 
-Dataset description to add:
+Prediction problem: binary classification
 
-- Number of rows
-- Number of variables
-- Unit of observation
-- Target variable definition
-- Predictor variable categories
-- Known limitations
-- Data dictionary link or table
+Response variable:
+
+- `High`: original quality score is 7 or higher.
+- `NotHigh`: original quality score is below 7.
+
+Predictors:
+
+- fixed acidity
+- volatile acidity
+- citric acid
+- residual sugar
+- chlorides
+- free sulfur dioxide
+- total sulfur dioxide
+- density
+- pH
+- sulphates
+- alcohol
 
 ## Methods Used
 
-- Exploratory Data Analysis
-- Data Wrangling
-- Missing Value Handling
-- Feature Engineering
-- Train/Validation/Test Splitting
-- Predictive Modeling
-- Hyperparameter Tuning
-- Model Evaluation
-- Model Interpretation
-- Data Visualization
+- Exploratory data analysis
+- Missing value check
+- Feature engineering
+- Stratified train/test splitting
+- Stratified 5-fold cross-validation
+- Logistic regression
+- Decision tree tuning
+- Random forest tuning
+- ROC AUC, accuracy, sensitivity, specificity, precision, and F1 evaluation
+- Variable importance
+- Non-technical executive summary
 
 ## Technologies
 
 - R
 - R Markdown
-- tidyverse
-- tidymodels or caret
 - ggplot2
+- dplyr
+- readr
+- rpart
+- randomForest
+- pROC
 - Git / GitHub
-- Optional: R Shiny
+- Python for slide, narration, and packaging automation
+- ElevenLabs for disclosed narration generation
 
 ## Repository Structure
 
@@ -77,25 +89,31 @@ Dataset description to add:
 
 1. Clone the repository.
 2. Open `report.Rmd` in RStudio.
-3. Install required R packages listed in the first code chunk.
-4. Place raw data in `data/`.
-5. Knit `report.Rmd` to HTML or PDF.
+3. Install the packages listed in the first executable code chunk.
+4. Knit `report.Rmd` to HTML.
+
+Command line option:
+
+```bash
+Rscript -e "rmarkdown::render('report.Rmd', output_file='Report-Team1.html')"
+```
+
+The report downloads the dataset automatically if `data/winequality-red.csv` does not exist.
 
 ## Deliverables
 
-- `Report-Team1.pdf` or `Report-Team1.html`
-- `Executive_Summary-Team1.pptx` or PDF
-- 10-15 minute recorded video presentation
-- GitHub repository with README
+- `Report-Team1.html`
+- `Executive_Summary-Team1.pptx`
+- `Video_Presentation-Team1.mp4`
+- `video_narration.mp3`
+- `video_script.md`
+- GitHub repository with this README
 
 ## AI Use Disclosure
 
-AI-assisted tools may be used for brainstorming, code debugging, outlining, editing, and improving clarity. All AI-assisted work must be reviewed, modified, understood, and cited by the team. Final code, modeling decisions, interpretation, and conclusions remain the responsibility of the students.
-
-Suggested disclosure language:
-
-> AI-assisted tools were used to help organize the report outline, review code structure, and improve clarity of written explanations. All modeling decisions, code validation, interpretation, and final conclusions were reviewed and modified by the project team.
+AI-assisted tools were used to help organize the report structure, draft explanatory language, create reproducible code scaffolding, and prepare presentation materials. The modeling workflow, code execution, output review, and final interpretation were checked in this project repository. AI was used as a support tool and is disclosed in the report because the assignment requires explicit attribution. The final submission should be reviewed by the student before submission so that all methods, code, and conclusions can be explained independently.
 
 ## License
 
 For academic use only unless otherwise specified.
+

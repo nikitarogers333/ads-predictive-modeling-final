@@ -1,0 +1,73 @@
+{
+  "rows": 1599,
+  "columns": 13,
+  "high_quality_rate": 0.1357,
+  "final_model": "Random forest",
+  "final_threshold": 0.27,
+  "final_auc": 0.9271,
+  "final_f1": 0.6731,
+  "final_accuracy": 0.8941,
+  "final_sensitivity": 0.7955,
+  "final_specificity": 0.9097,
+  "test_results": [
+    {
+      "model": "Random forest",
+      "parameter": "mtry=4",
+      "threshold": 0.27,
+      "accuracy": 0.8941,
+      "sensitivity": 0.7955,
+      "specificity": 0.9097,
+      "precision": 0.5833,
+      "f1": 0.6731,
+      "auc": 0.9271
+    },
+    {
+      "model": "Logistic regression",
+      "parameter": "none",
+      "threshold": 0.34,
+      "accuracy": 0.8598,
+      "sensitivity": 0.5455,
+      "specificity": 0.9097,
+      "precision": 0.4898,
+      "f1": 0.5161,
+      "auc": 0.8905
+    },
+    {
+      "model": "Decision tree",
+      "parameter": "cp=0.001",
+      "threshold": 0.14,
+      "accuracy": 0.785,
+      "sensitivity": 0.75,
+      "specificity": 0.7906,
+      "precision": 0.3626,
+      "f1": 0.4889,
+      "auc": 0.8694
+    }
+  ],
+  "top_predictors": [
+    {
+      "predictor": "alcohol",
+      "importance": 48.3688
+    },
+    {
+      "predictor": "volatile acidity",
+      "importance": 32.0813
+    },
+    {
+      "predictor": "sulphates",
+      "importance": 30.9705
+    },
+    {
+      "predictor": "density",
+      "importance": 24.4155
+    },
+    {
+      "predictor": "citric acid",
+      "importance": 22.1186
+    },
+    {
+      "predictor": "total sulfur dioxide",
+      "importance": 19.8053
+    }
+  ]
+}

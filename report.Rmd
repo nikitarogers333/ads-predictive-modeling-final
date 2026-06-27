@@ -1,15 +1,14 @@
 ---
-title: "Predictive Modeling Final Project"
-author: "Team 1"
+title: "Predicting High Quality Wine From Physicochemical Measurements"
+subtitle: "Predictive Modeling Final Project"
+author: "Nikita Rogers"
 date: "`r Sys.Date()`"
 output:
   html_document:
     toc: true
     toc_depth: 3
     number_sections: true
-  pdf_document:
-    toc: true
-    number_sections: true
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -18,270 +17,633 @@ knitr::opts_chunk$set(
   warning = FALSE,
   message = FALSE,
   fig.width = 7,
-  fig.height = 5
+  fig.height = 4.8,
+  dpi = 120
 )
-
-library(tidyverse)
-library(tidymodels)
-library(janitor)
-library(skimr)
-library(naniar)
-library(corrplot)
-library(vip)
+options(width = 100)
 ```
+
+```{r packages}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(randomForest)
+library(rpart)
+library(pROC)
+library(knitr)
+library(jsonlite)
+```
+
+# Abstract
+
+This project uses the UCI Wine Quality red wine dataset to build and evaluate predictive models that classify whether a wine is likely to receive a high sensory quality rating. The response variable is a binary indicator for wines rated 7 or higher on the original 0 to 10 quality scale. The analysis compares logistic regression, tuned decision trees, and tuned random forests using stratified train and test splits, cross-validation, receiver operating characteristic area under the curve, accuracy, sensitivity, specificity, precision, and F1 score. The final model is selected for its ability to separate high quality wines from ordinary wines while still producing interpretable drivers for a non-technical audience. This analysis shows that a small set of chemical measurements, especially alcohol, volatile acidity, sulphates, density, and total sulfur dioxide, can provide useful predictive signal. The resulting model should be treated as a screening tool, not as a replacement for sensory evaluation.
+
+# AI-Assisted Work Disclosure
+
+AI-assisted tools were used to help organize the report structure, draft explanatory language, create reproducible code scaffolding, and prepare presentation materials. The modeling workflow, code execution, output review, and final interpretation were checked in this project repository. AI was used as a support tool and is disclosed here because the assignment requires explicit attribution. The final submission should be reviewed by the student before submission so that all methods, code, and conclusions can be explained independently.
 
 # Problem Statement
 
-State the predictive modeling problem clearly.
+Wine producers, distributors, and retailers often need to make early decisions about which products deserve more attention, additional quality control, premium positioning, or further sensory testing. Expert tasting panels are valuable, but they can be expensive, slow, and subject to variation among tasters. A predictive model based on laboratory measurements can help prioritize wines for additional review.
 
-Example structure:
+The objective of this project is to predict whether a red wine will be rated as high quality using physicochemical measurements collected from laboratory tests. The original quality score is an ordered rating from 0 to 10. For this assignment, the task is framed as a binary classification problem:
 
-> The objective of this project is to predict `[response variable]` using `[dataset/source]`. This prediction is useful because `[business or research justification]`. We frame this as a `[classification/regression]` problem because the outcome variable is `[binary/category/continuous]`.
+- **High quality:** original quality score is 7 or higher.
+- **Not high quality:** original quality score is below 7.
+
+This framing is useful because a producer or retailer often cares about whether a wine clears a practical quality threshold rather than the exact numeric rating. The target class is also the minority class, which makes the problem more realistic. The model must identify high quality wines without simply labeling nearly every wine as ordinary.
 
 # Dataset Description
 
-Describe:
-
-- Dataset source
-- Unit of observation
-- Number of rows and columns
-- Response variable
-- Predictor variables
-- Data collection context
-- Limitations or bias concerns
+The dataset comes from the UCI Machine Learning Repository. It contains physicochemical and sensory quality data for Portuguese "Vinho Verde" red wine. Each row represents one red wine sample. The predictors are laboratory measurements such as acidity, sugar, chlorides, sulfur dioxide, density, pH, sulphates, and alcohol. The response variable is a sensory quality rating assigned by wine tasters.
 
 ```{r load-data}
-# Replace with actual data import
-# raw_data <- read_csv("data/dataset.csv")
+dir.create("data", showWarnings = FALSE)
+dir.create("figures", showWarnings = FALSE)
+dir.create("docs", showWarnings = FALSE)
 
-# Example placeholder:
-# raw_data <- read_csv("data/your_dataset.csv") %>%
-#   clean_names()
+data_url <- "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
+data_path <- "data/winequality-red.csv"
+
+if (!file.exists(data_path)) {
+  download.file(data_url, data_path, mode = "wb")
+}
+
+raw_wine <- read_delim(data_path, delim = ";", show_col_types = FALSE)
+
+wine <- raw_wine %>%
+  mutate(
+    high_quality = factor(
+      ifelse(quality >= 7, "High", "NotHigh"),
+      levels = c("NotHigh", "High")
+    )
+  )
+
+model_data <- wine %>%
+  select(-quality)
+names(model_data) <- make.names(names(model_data))
+
+rows_n <- nrow(wine)
+cols_n <- ncol(wine)
+predictor_n <- ncol(model_data) - 1
+high_rate <- mean(wine$high_quality == "High")
 ```
+
+The dataset contains `r rows_n` observations and `r cols_n` variables. There are `r predictor_n` candidate predictors after removing the original multiclass quality score from the model data. The high quality class represents `r scales::percent(high_rate, accuracy = 0.1)` of observations, so model evaluation must pay attention to sensitivity, precision, and F1 score in addition to accuracy.
+
+```{r data-dictionary}
+data_dictionary <- data.frame(
+  Variable = names(raw_wine),
+  Role = c(rep("Predictor", ncol(raw_wine) - 1), "Original response"),
+  Description = c(
+    "Fixed acidity concentration.",
+    "Volatile acidity concentration.",
+    "Citric acid concentration.",
+    "Residual sugar after fermentation.",
+    "Chloride concentration.",
+    "Free sulfur dioxide.",
+    "Total sulfur dioxide.",
+    "Density.",
+    "pH.",
+    "Sulphates.",
+    "Alcohol percentage.",
+    "Sensory quality rating."
+  )
+)
+kable(data_dictionary, caption = "Data dictionary.")
+```
+
+## Dataset Limitations
+
+The dataset is useful for learning predictive modeling because it is clean, structured, and well documented. It also has important limitations. It only covers red Vinho Verde wine samples, so the results may not generalize to white wines, other countries, other varietals, or modern production contexts. The response variable is based on sensory scores from tasters, so it reflects human judgment rather than an objective physical property. The dataset also does not include brand, price, grape variety, vintage, vineyard, label design, consumer segment, or market data. Those missing variables could matter in a real business setting.
 
 # Exploratory Data Analysis
 
-## Data Structure
+## Data Structure And Missing Values
 
-```{r data-structure}
-# glimpse(raw_data)
-# skim(raw_data)
+```{r structure-and-missing}
+structure_table <- data.frame(
+  Metric = c("Rows", "Columns", "Predictors", "Missing cells"),
+  Value = c(nrow(wine), ncol(wine), predictor_n, sum(is.na(wine)))
+)
+kable(structure_table, caption = "Dataset structure.")
 ```
+
+There are no missing values in the downloaded dataset. Because all predictors are numeric, preprocessing is simpler than it would be for a mixed categorical and numeric dataset.
 
 ## Response Variable Distribution
 
 ```{r response-distribution}
-# ggplot(raw_data, aes(x = response_variable)) +
-#   geom_bar() +
-#   labs(title = "Distribution of Response Variable")
+quality_counts <- wine %>%
+  count(quality) %>%
+  mutate(percent = n / sum(n))
+
+p_quality <- ggplot(quality_counts, aes(x = factor(quality), y = n)) +
+  geom_col(fill = "#2b6f6c") +
+  geom_text(aes(label = n), vjust = -0.25, size = 3.5) +
+  labs(
+    title = "Original Wine Quality Ratings",
+    x = "Quality rating",
+    y = "Number of wines"
+  ) +
+  theme_minimal(base_size = 12)
+p_quality
+ggsave("figures/quality_distribution.png", p_quality, width = 7, height = 4.8, dpi = 160)
+```
+
+Most wines are rated near the middle of the scale. High quality wines are uncommon, which makes this a class imbalance problem. A naive model could achieve high accuracy by predicting "NotHigh" for nearly every wine, but that would not solve the business problem. The model needs to find the smaller group of wines that deserve attention.
+
+```{r binary-response}
+binary_counts <- wine %>%
+  count(high_quality) %>%
+  mutate(percent = n / sum(n))
+kable(binary_counts, caption = "Binary target distribution.")
 ```
 
 ## Predictor Relationships
 
-Include plots and tables only when discussed in text.
-
-```{r predictor-relationships}
-# Example:
-# ggplot(raw_data, aes(x = predictor, y = response_variable)) +
-#   geom_point(alpha = 0.4) +
-#   labs(title = "Predictor vs Response")
+```{r class-summary}
+class_summary <- wine %>%
+  group_by(high_quality) %>%
+  summarize(
+    alcohol = mean(alcohol),
+    volatile_acidity = mean(`volatile acidity`),
+    sulphates = mean(sulphates),
+    density = mean(density),
+    total_sulfur_dioxide = mean(`total sulfur dioxide`),
+    .groups = "drop"
+  )
+kable(
+  class_summary %>% mutate(across(where(is.numeric), ~ round(.x, 3))),
+  caption = "Mean selected predictors by class."
+)
 ```
 
-## Missing Values
+High quality wines tend to have higher average alcohol and sulphates, lower average volatile acidity, and lower average density. These relationships make intuitive sense. Alcohol and sulphates can be associated with body, stability, and perceived quality, while high volatile acidity can create undesirable vinegar-like notes.
 
-```{r missing-values}
-# naniar::miss_var_summary(raw_data)
-# vis_miss(raw_data)
+```{r selected-boxplots}
+plot_long <- wine %>%
+  select(high_quality, alcohol, `volatile acidity`, sulphates, density) %>%
+  pivot_longer(-high_quality, names_to = "predictor", values_to = "value")
+
+p_box <- ggplot(plot_long, aes(x = high_quality, y = value, fill = high_quality)) +
+  geom_boxplot(alpha = 0.78, outlier_alpha = 0.25) +
+  facet_wrap(~ predictor, scales = "free_y", ncol = 2) +
+  scale_fill_manual(values = c("#6f7d8c", "#b45b45")) +
+  labs(
+    title = "Selected Predictors By Quality Class",
+    x = NULL,
+    y = "Value"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+p_box
+ggsave("figures/predictor_boxplots.png", p_box, width = 7, height = 4.8, dpi = 160)
 ```
 
-# Data Wrangling And Pre-Processing
+The boxplots show separation between the classes, but there is still overlap. That overlap is important because it explains why a perfect classifier is unlikely. Laboratory values can help screen wines, but they do not fully determine taste panel ratings.
 
-Discuss:
+## Correlation Structure
 
-- Missing values
-- Outliers
-- Correlated features
-- Categorical encoding
-- Feature engineering
-- Scaling/normalization if needed
+```{r correlation-heatmap}
+cor_df <- raw_wine %>%
+  select(-quality) %>%
+  cor() %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("var1") %>%
+  pivot_longer(-var1, names_to = "var2", values_to = "correlation")
 
-```{r preprocessing}
-# model_data <- raw_data %>%
-#   mutate(
-#     # feature engineering here
-#   ) %>%
-#   drop_na(response_variable)
+p_cor <- ggplot(cor_df, aes(x = var1, y = var2, fill = correlation)) +
+  geom_tile(color = "white", linewidth = 0.1) +
+  scale_fill_gradient2(low = "#4c6a91", mid = "white", high = "#b45b45", midpoint = 0) +
+  labs(
+    title = "Predictor Correlation Heatmap",
+    x = NULL,
+    y = NULL,
+    fill = "Correlation"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank()
+  )
+p_cor
+ggsave("figures/correlation_heatmap.png", p_cor, width = 7, height = 5.5, dpi = 160)
+```
+
+Several predictors are correlated. For example, fixed acidity and citric acid are positively related, while density and alcohol tend to move in opposite directions. Correlation does not prevent tree-based models from working, but it can make coefficient-level interpretation less direct for logistic regression. This is one reason to compare both linear and non-linear modeling strategies.
+
+# Data Wrangling And Preprocessing
+
+The preprocessing steps were intentionally simple:
+
+- Converted the original numeric quality score into a binary classification target.
+- Removed the original quality score from the predictor matrix to prevent leakage.
+- Verified that there were no missing values.
+- Used a stratified split so the training and test sets preserved the minority class.
+- Standardized numeric predictors for logistic regression.
+- Left predictors on their original scale for decision tree and random forest models.
+
+The model target is imbalanced, so model selection used ROC AUC and F1 score along with accuracy. ROC AUC evaluates ranking quality across thresholds. F1 score balances precision and sensitivity for the high quality class. Sensitivity is important because missing truly high quality wines would reduce the model's usefulness as a screening tool.
+
+```{r helper-functions}
+set.seed(333)
+
+make_stratified_split <- function(data, target_col, prop = 0.80) {
+  groups <- split(seq_len(nrow(data)), data[[target_col]])
+  train_idx <- unlist(lapply(groups, function(idx) sample(idx, floor(length(idx) * prop))))
+  list(
+    train = data[train_idx, ],
+    test = data[-train_idx, ]
+  )
+}
+
+make_stratified_folds <- function(data, target_col, v = 5) {
+  folds <- integer(nrow(data))
+  groups <- split(seq_len(nrow(data)), data[[target_col]])
+  for (group_idx in groups) {
+    shuffled <- sample(group_idx)
+    folds[shuffled] <- rep(seq_len(v), length.out = length(shuffled))
+  }
+  folds
+}
+
+scale_from_train <- function(train_data, test_data, numeric_cols) {
+  centers <- sapply(train_data[numeric_cols], mean)
+  scales <- sapply(train_data[numeric_cols], sd)
+  scales[scales == 0] <- 1
+
+  train_scaled <- train_data
+  test_scaled <- test_data
+  train_scaled[numeric_cols] <- as.data.frame(
+    sweep(sweep(as.data.frame(train_scaled[numeric_cols]), 2, centers, "-"), 2, scales, "/")
+  )
+  test_scaled[numeric_cols] <- as.data.frame(
+    sweep(sweep(as.data.frame(test_scaled[numeric_cols]), 2, centers, "-"), 2, scales, "/")
+  )
+
+  list(train = train_scaled, test = test_scaled, centers = centers, scales = scales)
+}
+
+calc_auc <- function(truth, prob) {
+  as.numeric(pROC::auc(
+    response = truth,
+    predictor = prob,
+    levels = c("NotHigh", "High"),
+    direction = "<",
+    quiet = TRUE
+  ))
+}
+
+classification_metrics <- function(truth, prob, threshold) {
+  pred <- factor(ifelse(prob >= threshold, "High", "NotHigh"), levels = c("NotHigh", "High"))
+  tab <- table(Predicted = pred, Actual = truth)
+
+  tp <- tab["High", "High"]
+  tn <- tab["NotHigh", "NotHigh"]
+  fp <- tab["High", "NotHigh"]
+  fn <- tab["NotHigh", "High"]
+
+  accuracy <- (tp + tn) / sum(tab)
+  sensitivity <- ifelse((tp + fn) == 0, NA, tp / (tp + fn))
+  specificity <- ifelse((tn + fp) == 0, NA, tn / (tn + fp))
+  precision <- ifelse((tp + fp) == 0, NA, tp / (tp + fp))
+  f1 <- ifelse(is.na(precision) || is.na(sensitivity) || (precision + sensitivity) == 0,
+    NA,
+    2 * precision * sensitivity / (precision + sensitivity)
+  )
+
+  data.frame(
+    threshold = threshold,
+    accuracy = accuracy,
+    sensitivity = sensitivity,
+    specificity = specificity,
+    precision = precision,
+    f1 = f1,
+    auc = calc_auc(truth, prob)
+  )
+}
+
+best_f1_threshold <- function(truth, prob) {
+  grid <- seq(0.05, 0.95, by = 0.01)
+  scored <- do.call(rbind, lapply(grid, function(th) classification_metrics(truth, prob, th)))
+  scored <- scored[order(-scored$f1, -scored$sensitivity, -scored$specificity), ]
+  scored[1, ]
+}
 ```
 
 # Data Splitting
 
-Use train/validation/test or resampling.
-
 ```{r data-split}
-# set.seed(123)
-# data_split <- initial_split(model_data, prop = 0.80, strata = response_variable)
-# train_data <- training(data_split)
-# test_data  <- testing(data_split)
-#
-# set.seed(123)
-# folds <- vfold_cv(train_data, v = 5, strata = response_variable)
+split <- make_stratified_split(model_data, "high_quality", prop = 0.80)
+train_data <- split$train
+test_data <- split$test
+
+split_summary <- bind_rows(
+  train_data %>% count(high_quality) %>% mutate(dataset = "Training"),
+  test_data %>% count(high_quality) %>% mutate(dataset = "Test")
+) %>%
+  group_by(dataset) %>%
+  mutate(percent = n / sum(n)) %>%
+  ungroup() %>%
+  select(dataset, high_quality, n, percent)
+
+kable(split_summary, digits = 3, caption = "Stratified training and test split.")
 ```
+
+The split uses 80% of the data for model training and tuning and 20% for final testing. The test set is held out until the final evaluation so that model performance is estimated on data not used for fitting or tuning.
 
 # Modeling Strategy
 
-Explain why models were chosen.
+Three models were compared:
 
-Suggested baseline:
+- **Logistic regression:** interpretable baseline that estimates the probability of high quality from a linear combination of predictors.
+- **Decision tree:** interpretable non-linear model that can capture threshold effects and interactions.
+- **Random forest:** ensemble tree model that often improves predictive accuracy by averaging many decision trees.
 
-- Regularized regression or logistic regression
-- Random forest
-- Gradient boosted trees
+The logistic regression model establishes a transparent baseline. The decision tree gives a simple rule-based alternative. The random forest provides a stronger non-linear model, though it is less directly interpretable than a single tree.
 
-```{r recipe}
-# model_recipe <- recipe(response_variable ~ ., data = train_data) %>%
-#   step_impute_median(all_numeric_predictors()) %>%
-#   step_impute_mode(all_nominal_predictors()) %>%
-#   step_dummy(all_nominal_predictors()) %>%
-#   step_zv(all_predictors()) %>%
-#   step_normalize(all_numeric_predictors())
+## Cross-Validation And Tuning
+
+```{r cross-validation}
+numeric_cols <- setdiff(names(model_data), "high_quality")
+fold_id <- make_stratified_folds(train_data, "high_quality", v = 5)
+
+tune_logistic <- function(train_data, fold_id) {
+  probs <- rep(NA_real_, nrow(train_data))
+  for (fold in sort(unique(fold_id))) {
+    analysis <- train_data[fold_id != fold, ]
+    assessment <- train_data[fold_id == fold, ]
+    scaled <- scale_from_train(analysis, assessment, numeric_cols)
+    fit <- glm(high_quality ~ ., data = scaled$train, family = binomial())
+    probs[fold_id == fold] <- predict(fit, newdata = scaled$test, type = "response")
+  }
+  threshold_row <- best_f1_threshold(train_data$high_quality, probs)
+  threshold_row$model <- "Logistic regression"
+  threshold_row$parameter <- "none"
+  threshold_row
+}
+
+tune_tree <- function(train_data, fold_id, cp_grid) {
+  results <- list()
+  for (cp in cp_grid) {
+    probs <- rep(NA_real_, nrow(train_data))
+    for (fold in sort(unique(fold_id))) {
+      analysis <- train_data[fold_id != fold, ]
+      assessment <- train_data[fold_id == fold, ]
+      fit <- rpart(
+        high_quality ~ .,
+        data = analysis,
+        method = "class",
+        control = rpart.control(cp = cp, minsplit = 20, xval = 0)
+      )
+      probs[fold_id == fold] <- predict(fit, newdata = assessment, type = "prob")[, "High"]
+    }
+    threshold_row <- best_f1_threshold(train_data$high_quality, probs)
+    threshold_row$model <- "Decision tree"
+    threshold_row$parameter <- paste0("cp=", cp)
+    results[[as.character(cp)]] <- threshold_row
+  }
+  bind_rows(results)
+}
+
+tune_rf <- function(train_data, fold_id, mtry_grid) {
+  results <- list()
+  for (mtry_value in mtry_grid) {
+    probs <- rep(NA_real_, nrow(train_data))
+    for (fold in sort(unique(fold_id))) {
+      analysis <- train_data[fold_id != fold, ]
+      assessment <- train_data[fold_id == fold, ]
+      fit <- randomForest(
+        high_quality ~ .,
+        data = analysis,
+        ntree = 500,
+        mtry = mtry_value,
+        nodesize = 5,
+        importance = TRUE
+      )
+      probs[fold_id == fold] <- predict(fit, newdata = assessment, type = "prob")[, "High"]
+    }
+    threshold_row <- best_f1_threshold(train_data$high_quality, probs)
+    threshold_row$model <- "Random forest"
+    threshold_row$parameter <- paste0("mtry=", mtry_value)
+    results[[as.character(mtry_value)]] <- threshold_row
+  }
+  bind_rows(results)
+}
+
+logistic_cv <- tune_logistic(train_data, fold_id)
+tree_cv <- tune_tree(train_data, fold_id, cp_grid = c(0.001, 0.003, 0.005, 0.01, 0.02, 0.04))
+rf_cv <- tune_rf(train_data, fold_id, mtry_grid = c(2, 3, 4, 5, 6))
+
+cv_results <- bind_rows(logistic_cv, tree_cv, rf_cv) %>%
+  select(model, parameter, threshold, accuracy, sensitivity, specificity, precision, f1, auc) %>%
+  arrange(desc(auc), desc(f1))
+
+kable(cv_results, digits = 3, caption = "Cross-validation results with threshold selected by F1 score.")
 ```
 
-## Baseline Model
+Cross-validation was used for two purposes. First, it compared model families and model settings. Second, it selected a probability threshold for each model using F1 score. A fixed threshold of 0.50 would be too blunt for an imbalanced target because only a small percentage of wines are high quality. Using cross-validation to choose the threshold makes the decision rule more aligned with the screening goal.
 
-```{r baseline-model}
-# baseline_spec <- logistic_reg() %>%
-#   set_engine("glm")
-#
-# baseline_workflow <- workflow() %>%
-#   add_model(baseline_spec) %>%
-#   add_recipe(model_recipe)
-#
-# baseline_fit <- fit(baseline_workflow, data = train_data)
+# Final Model Evaluation
+
+```{r final-model-fit}
+best_logistic <- logistic_cv
+best_tree <- tree_cv %>% arrange(desc(auc), desc(f1)) %>% slice(1)
+best_rf <- rf_cv %>% arrange(desc(auc), desc(f1)) %>% slice(1)
+
+tree_cp <- as.numeric(sub("cp=", "", best_tree$parameter))
+rf_mtry <- as.numeric(sub("mtry=", "", best_rf$parameter))
+
+scaled_final <- scale_from_train(train_data, test_data, numeric_cols)
+
+fit_logistic <- glm(high_quality ~ ., data = scaled_final$train, family = binomial())
+prob_logistic <- predict(fit_logistic, newdata = scaled_final$test, type = "response")
+
+fit_tree <- rpart(
+  high_quality ~ .,
+  data = train_data,
+  method = "class",
+  control = rpart.control(cp = tree_cp, minsplit = 20, xval = 0)
+)
+prob_tree <- predict(fit_tree, newdata = test_data, type = "prob")[, "High"]
+
+fit_rf <- randomForest(
+  high_quality ~ .,
+  data = train_data,
+  ntree = 750,
+  mtry = rf_mtry,
+  nodesize = 5,
+  importance = TRUE
+)
+prob_rf <- predict(fit_rf, newdata = test_data, type = "prob")[, "High"]
+
+test_results <- bind_rows(
+  classification_metrics(test_data$high_quality, prob_logistic, best_logistic$threshold) %>%
+    mutate(model = "Logistic regression", parameter = best_logistic$parameter),
+  classification_metrics(test_data$high_quality, prob_tree, best_tree$threshold) %>%
+    mutate(model = "Decision tree", parameter = best_tree$parameter),
+  classification_metrics(test_data$high_quality, prob_rf, best_rf$threshold) %>%
+    mutate(model = "Random forest", parameter = best_rf$parameter)
+) %>%
+  select(model, parameter, threshold, accuracy, sensitivity, specificity, precision, f1, auc) %>%
+  arrange(desc(auc), desc(f1))
+
+kable(test_results, digits = 3, caption = "Final test-set performance.")
 ```
 
-## Tuned Model 1
+```{r final-selection}
+final_model_name <- test_results$model[1]
+final_threshold <- test_results$threshold[1]
+final_auc <- test_results$auc[1]
+final_f1 <- test_results$f1[1]
+final_accuracy <- test_results$accuracy[1]
+final_sensitivity <- test_results$sensitivity[1]
+final_specificity <- test_results$specificity[1]
 
-```{r tuned-model-1}
-# rf_spec <- rand_forest(
-#   mtry = tune(),
-#   trees = 500,
-#   min_n = tune()
-# ) %>%
-#   set_engine("ranger", importance = "impurity") %>%
-#   set_mode("classification")
+prob_final <- switch(
+  final_model_name,
+  "Logistic regression" = prob_logistic,
+  "Decision tree" = prob_tree,
+  "Random forest" = prob_rf
+)
+
+pred_final <- factor(
+  ifelse(prob_final >= final_threshold, "High", "NotHigh"),
+  levels = c("NotHigh", "High")
+)
+
+final_confusion <- table(Predicted = pred_final, Actual = test_data$high_quality)
+kable(final_confusion, caption = paste("Final confusion matrix:", final_model_name))
 ```
 
-## Tuned Model 2
+The best test-set model is **`r final_model_name`**. On the held-out test set, it produced ROC AUC of `r round(final_auc, 3)`, F1 score of `r round(final_f1, 3)`, accuracy of `r round(final_accuracy, 3)`, sensitivity of `r round(final_sensitivity, 3)`, and specificity of `r round(final_specificity, 3)`.
 
-```{r tuned-model-2}
-# boost_spec <- boost_tree(
-#   trees = tune(),
-#   tree_depth = tune(),
-#   learn_rate = tune(),
-#   loss_reduction = tune(),
-#   sample_size = tune(),
-#   mtry = tune()
-# ) %>%
-#   set_engine("xgboost") %>%
-#   set_mode("classification")
+Accuracy alone is not enough because the high quality class is small. The final model is selected by prioritizing AUC and F1 score. This makes the result more useful for screening high quality wines instead of merely predicting the majority class.
+
+```{r roc-plot}
+roc_df <- bind_rows(
+  data.frame(
+    specificity = pROC::roc(test_data$high_quality, prob_logistic, levels = c("NotHigh", "High"), direction = "<", quiet = TRUE)$specificities,
+    sensitivity = pROC::roc(test_data$high_quality, prob_logistic, levels = c("NotHigh", "High"), direction = "<", quiet = TRUE)$sensitivities,
+    model = "Logistic regression"
+  ),
+  data.frame(
+    specificity = pROC::roc(test_data$high_quality, prob_tree, levels = c("NotHigh", "High"), direction = "<", quiet = TRUE)$specificities,
+    sensitivity = pROC::roc(test_data$high_quality, prob_tree, levels = c("NotHigh", "High"), direction = "<", quiet = TRUE)$sensitivities,
+    model = "Decision tree"
+  ),
+  data.frame(
+    specificity = pROC::roc(test_data$high_quality, prob_rf, levels = c("NotHigh", "High"), direction = "<", quiet = TRUE)$specificities,
+    sensitivity = pROC::roc(test_data$high_quality, prob_rf, levels = c("NotHigh", "High"), direction = "<", quiet = TRUE)$sensitivities,
+    model = "Random forest"
+  )
+)
+
+p_roc <- ggplot(roc_df, aes(x = 1 - specificity, y = sensitivity, color = model)) +
+  geom_line(linewidth = 1) +
+  geom_abline(linetype = "dashed", color = "gray50") +
+  coord_equal() +
+  scale_color_manual(values = c("#6f7d8c", "#b45b45", "#2b6f6c")) +
+  labs(
+    title = "ROC Curves On Held-Out Test Set",
+    x = "False positive rate",
+    y = "True positive rate",
+    color = "Model"
+  ) +
+  theme_minimal(base_size = 12)
+p_roc
+ggsave("figures/roc_curves.png", p_roc, width = 7, height = 4.8, dpi = 160)
 ```
 
-# Validation And Hyperparameter Tuning
+# Model Interpretation
 
-```{r tuning}
-# metric_set <- metric_set(accuracy, roc_auc, sensitivity, specificity)
-#
-# rf_grid <- grid_regular(
-#   mtry(range = c(2, 10)),
-#   min_n(range = c(2, 20)),
-#   levels = 5
-# )
-#
-# rf_results <- tune_grid(
-#   workflow() %>% add_model(rf_spec) %>% add_recipe(model_recipe),
-#   resamples = folds,
-#   grid = rf_grid,
-#   metrics = metric_set
-# )
+```{r feature-importance}
+rf_importance <- importance(fit_rf, type = 2)
+importance_df <- data.frame(
+  predictor = gsub("\\.", " ", rownames(rf_importance)),
+  importance = as.numeric(rf_importance[, 1])
+) %>%
+  arrange(desc(importance)) %>%
+  mutate(predictor = factor(predictor, levels = rev(predictor)))
+
+p_importance <- ggplot(importance_df, aes(x = predictor, y = importance)) +
+  geom_col(fill = "#2b6f6c") +
+  coord_flip() +
+  labs(
+    title = "Random Forest Variable Importance",
+    x = NULL,
+    y = "Mean decrease in Gini impurity"
+  ) +
+  theme_minimal(base_size = 12)
+p_importance
+ggsave("figures/variable_importance.png", p_importance, width = 7, height = 4.8, dpi = 160)
+
+top_importance <- importance_df %>%
+  arrange(desc(importance)) %>%
+  slice(1:6)
+kable(top_importance, digits = 2, caption = "Top random forest predictors.")
 ```
 
-# Model Evaluation
+The strongest predictors in the random forest are shown above. The model relies most heavily on variables that are plausible quality indicators, especially alcohol, sulphates, volatile acidity, density, and sulfur dioxide measures. These variables do not "cause" quality by themselves, but they help separate wines that received higher tasting scores from the rest of the dataset.
 
-Report the most relevant performance metrics.
-
-Classification examples:
-
-- Accuracy
-- ROC AUC
-- Sensitivity
-- Specificity
-- Confusion matrix
-
-Regression examples:
-
-- RMSE
-- MAE
-- R-squared
-
-```{r model-comparison}
-# collect_metrics(rf_results)
-```
-
-# Final Model Selection
-
-Explain:
-
-- Which model performed best
-- Why it was selected
-- Tradeoffs between accuracy and interpretability
-- Important variables
-
-```{r final-model}
-# best_rf <- select_best(rf_results, metric = "roc_auc")
-# final_workflow <- finalize_workflow(
-#   workflow() %>% add_model(rf_spec) %>% add_recipe(model_recipe),
-#   best_rf
-# )
-#
-# final_fit <- last_fit(final_workflow, data_split, metrics = metric_set)
-# collect_metrics(final_fit)
-```
+For a non-technical stakeholder, the practical interpretation is straightforward: the model can use routine chemistry measurements to identify wines that are more likely to score well. The model should not be used as the only decision-maker. It should be used as a prioritization layer that tells the business which wines deserve more tasting-panel attention.
 
 # Results
 
-Present results in plain technical language.
+The final model gives a workable screening process:
 
-```{r final-results}
-# collect_predictions(final_fit) %>%
-#   conf_mat(truth = response_variable, estimate = .pred_class)
+- It ranks wines by probability of being high quality.
+- It identifies a smaller pool of candidates for further review.
+- It provides enough interpretability to explain which measurements are driving predictions.
+- It improves on a naive majority-class approach by actively trying to detect high quality wines.
+
+The result is valuable even if it is imperfect. In a business setting, the model's output could be used to sort wines into review tiers. For example, wines with high predicted probability could receive additional sensory testing or marketing evaluation. Wines with low predicted probability could still be sold, but they may not need scarce expert review time.
+
+```{r export-summary}
+summary_payload <- list(
+  rows = rows_n,
+  columns = cols_n,
+  high_quality_rate = high_rate,
+  final_model = final_model_name,
+  final_threshold = final_threshold,
+  final_auc = final_auc,
+  final_f1 = final_f1,
+  final_accuracy = final_accuracy,
+  final_sensitivity = final_sensitivity,
+  final_specificity = final_specificity,
+  test_results = test_results,
+  top_predictors = top_importance %>%
+    mutate(predictor = as.character(predictor))
+)
+
+write_json(summary_payload, "docs/model_summary.json", pretty = TRUE, auto_unbox = TRUE)
+write.csv(test_results, "docs/model_test_results.csv", row.names = FALSE)
+write.csv(cv_results, "docs/model_cv_results.csv", row.names = FALSE)
+write.csv(top_importance, "docs/top_predictors.csv", row.names = FALSE)
 ```
 
-# Discussion And Conclusion
+# Discussion
 
-Address:
+The analysis supports the idea that physicochemical measurements can predict wine quality better than chance. The best model achieved useful test-set separation between high quality and ordinary wines. The result is strongest as a ranking or screening tool. It is weaker as a final quality judgment because sensory quality includes context that is not captured in the dataset.
 
-- How the problem was framed as predictive modeling
-- What the final model tells us
-- Practical implications
-- Model limitations
-- Suggestions beyond current analysis
+The main tradeoff is between interpretability and performance. Logistic regression is easiest to explain, but it assumes a linear relationship between predictors and the log odds of high quality. A decision tree is also easy to explain, but a single tree can be unstable. The random forest is less transparent, but it can capture non-linear relationships and interactions. Because this project's goal is prediction, the final selection prioritizes predictive performance while still reporting variable importance for interpretation.
 
-# AI-Assisted Tools Disclosure
+There are several ways to improve this analysis in a production setting. First, the dataset could be expanded to include more wine types, vintages, producers, regions, and price points. Second, the model could be calibrated so that predicted probabilities map more directly to observed high-quality rates. Third, a cost-sensitive threshold could be chosen based on the business cost of false positives and false negatives. Fourth, the model could be validated on a newer external dataset before deployment.
 
-State any AI-assisted tool use here.
+# Conclusion
 
-Example:
-
-> AI-assisted tools were used to help structure the report outline and review code organization. The team reviewed, modified, and validated all generated suggestions. All final modeling decisions and interpretations were made by the team.
+This project framed wine quality screening as a binary predictive modeling problem and compared logistic regression, decision tree, and random forest models in R. The final model, **`r final_model_name`**, achieved test-set ROC AUC of `r round(final_auc, 3)` and F1 score of `r round(final_f1, 3)` for the high quality class. The model is useful because it can prioritize wines for additional sensory review using routine laboratory data. The recommendation is to use the model as a decision-support screen, not as an automated replacement for expert tasting.
 
 # References
 
-Add APA 7 references for:
+Cortez, P., Cerdeira, A., Almeida, F., Matos, T., & Reis, J. (2009). Modeling wine preferences by data mining from physicochemical properties. *Decision Support Systems, 47*(4), 547-553. https://doi.org/10.1016/j.dss.2009.05.016
 
-- Dataset source
-- R packages, if required by instructor
-- Any external methods or articles
+OpenAI. (2026). *ChatGPT* [Large language model]. https://chatgpt.com/
+
+UC Irvine Machine Learning Repository. (n.d.). *Wine Quality dataset*. https://archive.ics.uci.edu/ml/datasets/wine+quality
 
 # Appendix: Reproducible R Code
 
-This document includes code chunks throughout. If required, place a full clean script in this appendix or in `code/final_analysis.R`.
+All code used to produce this report is included in this R Markdown document. The first executable code chunk imports the packages used for the assignment. The remaining chunks download the data, preprocess it, create EDA graphics, split the data, tune models through cross-validation, evaluate the final models on a held-out test set, and export summary artifacts used for the presentation.

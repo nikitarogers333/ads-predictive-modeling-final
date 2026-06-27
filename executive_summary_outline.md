@@ -1,85 +1,42 @@
 # Executive Summary Deck Outline
 
-Maximum: 5 slides
+Final file: `Executive_Summary-Team1.pptx`
 
-Audience: Director, VP, or executive audience with no statistical background.
+Maximum length: 5 slides.
 
-## Slide 1: Business Problem
+Audience: non-technical director, VP, or executive-level reader.
 
-Title: What We Are Trying To Predict
+## Slide 1: Problem And Data
 
-Content:
+- Predict whether a red wine will receive a high sensory quality score.
+- Dataset is UCI red wine quality data.
+- High quality wines are the minority class.
+- Business use is early screening before extra tasting-panel review.
 
-- One-sentence problem statement
-- Why prediction matters
-- Who benefits from the prediction
-- Dataset source in plain language
+## Slide 2: Modeling Approach
 
-Speaker note:
+- Create binary target from quality score.
+- Use stratified train/test split.
+- Compare logistic regression, decision tree, and random forest.
+- Use cross-validation for tuning and threshold selection.
 
-> We used historical data to predict [outcome] so decision-makers can [business value].
+## Slide 3: Final Model
 
-## Slide 2: Data Story
+- Name selected final model.
+- Report AUC, F1, and accuracy.
+- Explain that F1 matters because high quality wines are uncommon.
+- Use ROC curve as main visual.
 
-Title: What The Data Shows
+## Slide 4: Key Drivers
 
-Content:
+- Show top variable-importance predictors.
+- Explain that model drivers are useful signals, not proof of causation.
+- Emphasize alcohol, acidity, sulphates, density, and sulfur dioxide if they rank highly.
 
-- Size of dataset
-- Most relevant variables
-- 1-2 simple visuals
-- Key pattern from EDA
+## Slide 5: Recommendation
 
-Avoid:
+- Use model scores to rank wines for extra review.
+- Do not use model as final quality decision.
+- Improve with external validation and richer business data.
+- Disclose AI-assisted support.
 
-- Model jargon
-- Correlation matrices unless simplified
-
-## Slide 3: Solutions Explored
-
-Title: Models We Tested
-
-Content:
-
-- Baseline model
-- More flexible model
-- Final model
-- Explain in plain English
-
-Plain-language framing:
-
-- Baseline = simple benchmark
-- Flexible model = captures more complex patterns
-- Final model = best balance of performance and usefulness
-
-## Slide 4: Recommendation
-
-Title: Best Model And Expected Value
-
-Content:
-
-- Final model selected
-- Performance in plain language
-- Most important drivers
-- Example of how prediction would be used
-
-Use:
-
-- "The model correctly identifies..."
-- "The strongest predictors were..."
-- "This can help prioritize..."
-
-## Slide 5: Risks And Next Steps
-
-Title: What To Do Next
-
-Content:
-
-- Limitations
-- Data gaps
-- Deployment/monitoring idea
-- Recommended next step
-
-Speaker note:
-
-> This model should be treated as a decision-support tool, not an automatic decision-maker.

@@ -1,97 +1,41 @@
 # Video Presentation Outline
 
-Target length: 10-15 minutes
+Final files:
 
-Audience: Technical peers and instructor.
+- `Video_Presentation_Slides-Team1.pptx`
+- `video_script.md`
+- `video_narration.mp3`
+- `Video_Presentation-Team1.mp4`
 
-Each team member should present an equal portion.
+Final length: about 10 minutes and 20 seconds.
 
-## Suggested Timing
+Audience: technical peers and instructor.
 
-## 1. Introduction And Problem Statement
+## Slides
 
-Time: 1-2 minutes
+1. Problem Statement
+2. Business Motivation
+3. Dataset
+4. Target And Class Balance
+5. EDA Findings
+6. Preprocessing
+7. Data Splitting
+8. Validation Design
+9. Model Strategy
+10. Metrics
+11. Final Test Results
+12. Interpretation
+13. Limitations And Next Steps
+14. Conclusion
 
-Cover:
+## Coverage
 
-- Problem statement
-- Dataset
-- Response variable
-- Predictive modeling framing
+- Clearly defined problem statement and predictive framing.
+- Dataset source, unit of observation, predictors, and target.
+- Exploratory data analysis and class imbalance.
+- Preprocessing, leakage prevention, and split design.
+- Model building strategy and hyperparameter tuning.
+- Validation and test-set performance.
+- Final model selection.
+- Interpretation, limitations, conclusion, and AI-use disclosure.
 
-## 2. Data Description And EDA
-
-Time: 2-3 minutes
-
-Cover:
-
-- Dataset structure
-- Missing values
-- Response distribution
-- Important predictor relationships
-- Key visual findings
-
-## 3. Pre-Processing And Data Splitting
-
-Time: 2 minutes
-
-Cover:
-
-- Cleaning decisions
-- Missing value handling
-- Outliers
-- Feature engineering
-- Train/validation/test split
-- Resampling strategy
-
-## 4. Modeling Strategy
-
-Time: 2-3 minutes
-
-Cover:
-
-- Baseline model
-- Candidate models
-- Why models were appropriate
-- Hyperparameters tuned
-
-## 5. Model Performance And Final Selection
-
-Time: 2-3 minutes
-
-Cover:
-
-- Validation performance
-- Test performance
-- Final model selected
-- Confusion matrix or error metrics
-- Variable importance or interpretation
-
-## 6. Discussion And Conclusion
-
-Time: 1-2 minutes
-
-Cover:
-
-- What the model means
-- Limitations
-- Practical recommendations
-- Future work
-
-## Optional Shiny Demo
-
-If included, keep under 1 minute.
-
-Show:
-
-- User input
-- Model prediction
-- How a stakeholder would use it
-
-## Recording Notes
-
-- Record screen plus voice narration.
-- Use Zoom, Screencastify, or similar.
-- Export as `.mp4`.
-- If video file is large, upload to YouTube/Vimeo and submit link.
-- Ensure each team member speaks.

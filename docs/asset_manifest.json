@@ -1,0 +1,38 @@
+{
+  "executive_summary": "/root/projects/ads-predictive-modeling-final/Executive_Summary-Team1.pptx",
+  "video_slides": "/root/projects/ads-predictive-modeling-final/Video_Presentation_Slides-Team1.pptx",
+  "video_script": "/root/projects/ads-predictive-modeling-final/video_script.md",
+  "slide_images": [
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_01.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_02.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_03.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_04.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_05.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_06.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_07.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_08.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_09.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_10.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_11.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_12.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_13.png",
+    "/root/projects/ads-predictive-modeling-final/slides/video_slide_14.png"
+  ],
+  "audio_files": [
+    "/root/projects/ads-predictive-modeling-final/audio/slide_01.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_02.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_03.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_04.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_05.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_06.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_07.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_08.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_09.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_10.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_11.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_12.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_13.mp3",
+    "/root/projects/ads-predictive-modeling-final/audio/slide_14.mp3"
+  ],
+  "video_file": "/root/projects/ads-predictive-modeling-final/Video_Presentation-Team1.mp4"
+}
